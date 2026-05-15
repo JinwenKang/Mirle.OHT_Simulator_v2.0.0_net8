@@ -95,4 +95,14 @@
     <None Update="SaveConfig\**\*.csv" CopyToOutputDirectory="Always" />
   </ItemGroup>
 
+  <!-- HASP 加密狗 native runtime（hasp_net_windows.dll 透過 P/Invoke 載入）-->
+  <ItemGroup>
+    <Content Include="hasp_windows_101490.dll" CopyToOutputDirectory="Always" />
+    <Content Include="hasp_windows_24266.dll" CopyToOutputDirectory="Always" />
+    <Content Include="hasp_windows_x64_101490.dll" CopyToOutputDirectory="Always" />
+    <Content Include="hasp_windows_x64_24266.dll" CopyToOutputDirectory="Always" />
+    <Content Include="apidsp_windows.dll" CopyToOutputDirectory="Always" />
+    <Content Include="apidsp_windows_x64.dll" CopyToOutputDirectory="Always" />
+  </ItemGroup>
+
 </Project>
