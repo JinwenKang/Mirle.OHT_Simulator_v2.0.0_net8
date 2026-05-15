@@ -29,19 +29,35 @@ namespace Mirle.Agvc.Simulator
 
             ThreadPool.SetMinThreads(minWorkerThreads, minCompletionPortThreads);
             //ThreadPool.SetMaxThreads(maxWorkerThreads, maxCompletionPortThreads);
+            // NLog Error target 實際寫入路徑（見 NLog.config）：
+            //   D:\OHTC_Sim_Log\yyyyMMdd\Error.log
+            const string LOG_HINT = @"D:\OHTC_Sim_Log\{yyyyMMdd}\Error.log";
+
             // 全域例外攔截：UI Thread
             Application.ThreadException += (sender, e) =>
             {
-                LogManager.GetCurrentClassLogger().Error(e.Exception.ToString());
-                MessageBox.Show("發生錯誤，請查看 crash_ui.log");
+                LogManager.GetCurrentClassLogger().Error(e.Exception, "[UI Thread] Unhandled exception");
+                MessageBox.Show(
+                    $"UI 執行緒發生例外：{e.Exception.GetType().Name}{Environment.NewLine}{Environment.NewLine}" +
+                    $"{e.Exception.Message}{Environment.NewLine}{Environment.NewLine}" +
+                    $"完整紀錄請看：{LOG_HINT}",
+                    "Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             };
 
             // 全域例外攔截：非 UI Thread
             AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
             {
-                var ex = (Exception)e.ExceptionObject;
-                LogManager.GetCurrentClassLogger().Error(ex.ToString());
-                MessageBox.Show("非UI執行緒發生錯誤，請查看 crash_appdomain.log");
+                var ex = e.ExceptionObject as Exception;
+                LogManager.GetCurrentClassLogger().Error(ex, "[Non-UI Thread] Unhandled exception (IsTerminating={0})", e.IsTerminating);
+                MessageBox.Show(
+                    $"非 UI 執行緒發生例外：{ex?.GetType().Name}{Environment.NewLine}{Environment.NewLine}" +
+                    $"{ex?.Message}{Environment.NewLine}{Environment.NewLine}" +
+                    $"完整紀錄請看：{LOG_HINT}",
+                    "Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             };
             GrpcEnvironment.SetLogger(new NLogGrpcLogger());
             Application.EnableVisualStyles();
