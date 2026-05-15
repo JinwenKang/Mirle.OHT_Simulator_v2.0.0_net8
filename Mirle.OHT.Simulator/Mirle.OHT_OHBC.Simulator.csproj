@@ -10,7 +10,14 @@
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <!--
+      x86 強制：
+      1. QS ActiveX COM 元件 (CLSID 6FF9C8F2-...) 只註冊在 32-bit registry hive
+      2. hasp_net_windows.dll 是 i386 (x86) .NET 組件
+      3. SECSTrxControl 系列廠商 DLL 全為 32-bit 設計
+      .NET 4.x AnyCPU 預設 Prefer32Bit 跑 32-bit；.NET 8 移除此旗標必須顯式 x86
+    -->
+    <PlatformTarget>x86</PlatformTarget>
     <Deterministic>true</Deterministic>
     <!-- 組件中繼資料：原 Properties/AssemblyInfo.cs 內容收進來，SDK 自動產生 -->
     <AssemblyTitle>Mirle.Agvc.Simulator</AssemblyTitle>
