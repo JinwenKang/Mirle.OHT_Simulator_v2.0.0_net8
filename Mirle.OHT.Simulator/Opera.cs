@@ -1,8 +1,8 @@
 ﻿//*********************************************************************************
-//      Opera_New.cs
+//      Opera.cs
 //*********************************************************************************
-// File Name: Opera_New.cs
-// Description: Opera_New
+// File Name: Opera.cs
+// Description: Opera
 //
 //(c) Copyright 2014, MIRLE Automation Corporation
 //
@@ -37,7 +37,7 @@ using static com.mirle.ibg3k0.stc.Data.SecsData.Sample.S2F49_TRANSFEREXT.REPITEM
 
 namespace Mirle.Agvc.Simulator
 {
-    class Opera_New
+    class Opera
     {
         private EventHandler<string> OnCmdSend;
         private EnumOperaType operaType;
@@ -48,7 +48,6 @@ namespace Mirle.Agvc.Simulator
         private ID_38_GUIDE_INFO_RESPONSE recent38Guide;
         private ID_37_TRANS_CANCEL_REQUEST iD_37_TRANS_Cmd;
         private GuideData guideData;
-        private MiddlerConfigs middlerConfigs;
         private MiddleAgent agent;
         private bool syncMapInfo = false;
         private bool teachReply = true;
@@ -83,7 +82,7 @@ namespace Mirle.Agvc.Simulator
         private int CurrentAct = SCAppConstants.CurrentAction.Initial;
 
         object sendRecv_LockObj = new object();
-        public Opera_New(MiddleAgent agent)
+        public Opera(MiddleAgent agent)
         {
             scApp = SCApplication.getInstance();
             this.agent = agent;
@@ -2910,7 +2909,7 @@ namespace Mirle.Agvc.Simulator
                             }
 
                             //如果 Address 已經超過目的地，將 Flag On 起，於判斷是否遇到障礙時使用
-                            bool isBeyondDest = false;
+                            // 註：原 isBeyondDest 旗標宣告但未實際讀取，先移除避免誤導；若後續真的要用再補回
                             int dis = int.MaxValue;
                             if (recent31Cmd.ActType == ActiveType.Move)
                             {

@@ -47,7 +47,7 @@ namespace OverhaedHoistTransporter_Simulator.Action
             }
             catch (Exception ex)
             {
-
+                logger.Error(ex);
             }
         }
         protected async Task s6f11ReceiveAsync(object sender, SECSEventArgs e)
@@ -84,7 +84,7 @@ namespace OverhaedHoistTransporter_Simulator.Action
             }
             catch (Exception ex)
             {
-
+                logger.Error(ex);
             }
         }
 
@@ -114,7 +114,7 @@ namespace OverhaedHoistTransporter_Simulator.Action
             }
             catch (Exception ex)
             {
-
+                logger.Error(ex);
             }
         }
         public void sendS2F41_Rename(string old_carrier_id, string new_carrier_id, string carrier_loc)
@@ -153,7 +153,7 @@ namespace OverhaedHoistTransporter_Simulator.Action
             }
             catch (Exception ex)
             {
-
+                logger.Error(ex);
             }
         }
 
@@ -246,7 +246,7 @@ namespace OverhaedHoistTransporter_Simulator.Action
             }
             catch (Exception ex)
             {
-
+                logger.Error(ex);
             }
         }
 
@@ -339,7 +339,7 @@ namespace OverhaedHoistTransporter_Simulator.Action
             }
             catch (Exception ex)
             {
-
+                logger.Error(ex);
             }
         }
     }

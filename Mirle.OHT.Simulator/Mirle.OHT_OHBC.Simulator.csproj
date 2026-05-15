@@ -12,9 +12,15 @@
     <LangVersion>latest</LangVersion>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Deterministic>true</Deterministic>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <AssemblyVersion>2.0.0.1</AssemblyVersion>
-    <FileVersion>2.0.0.1</FileVersion>
+    <!-- 組件中繼資料：原 Properties/AssemblyInfo.cs 內容收進來，SDK 自動產生 -->
+    <AssemblyTitle>Mirle.Agvc.Simulator</AssemblyTitle>
+    <Product>Mirle.Agvc.Simulator</Product>
+    <Company>Mirle Automation Corporation</Company>
+    <Copyright>Copyright © Mirle Automation Corporation</Copyright>
+    <AssemblyVersion>2.0.0.14</AssemblyVersion>
+    <FileVersion>2.0.0.14</FileVersion>
+    <Version>2.0.0.14</Version>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- WinForms 在 net8.0-windows 下會大量觸發 CA1416；TFM 已限定 Windows，可安全抑制 -->
     <NoWarn>$(NoWarn);CA1416</NoWarn>
   </PropertyGroup>

@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 
 namespace Mirle.Agvc.Simulator
 {
-    [Serializable]
     public class LoadunloadCmd
     {
         public string CmdText { get; set; } = "Empty";

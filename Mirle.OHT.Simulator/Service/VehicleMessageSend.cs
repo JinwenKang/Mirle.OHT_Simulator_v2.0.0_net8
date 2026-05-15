@@ -111,17 +111,17 @@ namespace com.mirle.ibg3k0.sc.Service.gRPC
             //   TaskCreationOptions.LongRunning);
         }
         const int GRPC_CONNECTION_CHECK_INTERVAL_TIME_MS = 5_000;
-        private async void connectionCheck()
+        private async Task connectionCheck()
         {
             do
             {
                 try
                 {
                     var deadline = DateTime.UtcNow.AddMilliseconds(GRPC_CONNECTION_CHECK_INTERVAL_TIME_MS);
-                    await channel.ConnectAsync(deadline);
+                    await channel.ConnectAsync(deadline).ConfigureAwait(false);
                     isConnection = channel.State == ChannelState.Ready;
                 }
-                catch (TaskCanceledException ex)
+                catch (TaskCanceledException)
                 {
                     isConnection = false;
                 }
@@ -129,8 +129,7 @@ namespace com.mirle.ibg3k0.sc.Service.gRPC
                 {
                     logger.Error(ex, "Exception");
                 }
-                //System.Threading.SpinWait.SpinUntil(() => false, 5000);
-                Thread.Sleep(5000);
+                await Task.Delay(5000).ConfigureAwait(false);
             }
             while (true);
         }
@@ -164,7 +163,7 @@ namespace com.mirle.ibg3k0.sc.Service.gRPC
                         return returnEmptyOnTransEventRep ? (true, new WrapperMessage()) : (false, null);
                     }
 
-                    var reply = await task_reply.ResponseAsync;
+                    var reply = await task_reply.ResponseAsync.ConfigureAwait(false);
                     recordMessage(ip, reply);
                     return (true, reply);
                 }
@@ -173,7 +172,7 @@ namespace com.mirle.ibg3k0.sc.Service.gRPC
                     logger.Error($"[Retry:{retry}] Seq No:[{sendWrapperMsg.SeqNum}] {log_msg} RpcException: {ex.StatusCode}, {ex.Message}");
                     //if (retry < MAX_RETRY && IsRetriable(ex.StatusCode))
                     if (retry < MAX_RETRY)
-                        await Task.Delay(DELAY_BETWEEN_RETRY_MS);
+                        await Task.Delay(DELAY_BETWEEN_RETRY_MS).ConfigureAwait(false);
                     else
                         break;
                 }
@@ -203,10 +202,10 @@ namespace com.mirle.ibg3k0.sc.Service.gRPC
 
         public async Task<(bool isSuccess, WrapperMessage message)> SendMessageUnaryAsync(WrapperMessage msg)
         {
-            await semaphore.WaitAsync();
+            await semaphore.WaitAsync().ConfigureAwait(false);
             try
             {
-                return await SendMessageInternalAsync(msg, "SendMessageUnaryAsync", true);
+                return await SendMessageInternalAsync(msg, "SendMessageUnaryAsync", true).ConfigureAwait(false);
             }
             finally
             {
@@ -232,7 +231,7 @@ namespace com.mirle.ibg3k0.sc.Service.gRPC
             await semaphore.WaitAsync();
             try
             {
-                return await SendMessageInternalAsync(msg, log_msg, true);
+                return await SendMessageInternalAsync(msg, log_msg, true).ConfigureAwait(false);
             }
             finally
             {
@@ -258,7 +257,7 @@ namespace com.mirle.ibg3k0.sc.Service.gRPC
             await semaphore.WaitAsync();
             try
             {
-                return await SendMessageInternalAsync(msg, log_msg, false);
+                return await SendMessageInternalAsync(msg, log_msg, false).ConfigureAwait(false);
             }
             finally
             {
@@ -395,17 +394,18 @@ namespace com.mirle.ibg3k0.sc.Service.gRPC
                     if (!IS_QUEUE_WORK)
                     {
                         IS_QUEUE_WORK = true;
-                        Task.Run(() => { doWork(); });
+                        _ = Task.Run(doWork);
                     }
                 }
                 return true;
             }
             catch (Exception ex)
             {
+                logger.Error(ex, "sendMessageClientStream failed");
                 return false;
             }
         }
-        private void doWork()
+        private async Task doWork()
         {
             while (true)
             {
@@ -416,7 +416,7 @@ namespace com.mirle.ibg3k0.sc.Service.gRPC
                     {
                         var try_result = tryGetClientStreamCall(channel);
                         if (!try_result.isSuccess) continue;
-                        asyncClientStreamingCall.RequestStream.WriteAsync(report).Wait();
+                        await asyncClientStreamingCall.RequestStream.WriteAsync(report).ConfigureAwait(false);
                     }
                     else
                     {
@@ -425,6 +425,7 @@ namespace com.mirle.ibg3k0.sc.Service.gRPC
                 }
                 catch (Exception ex)
                 {
+                    logger.Error(ex, "doWork stream write failed; resetting stream");
                     asyncClientStreamingCall = null;
                 }
             }

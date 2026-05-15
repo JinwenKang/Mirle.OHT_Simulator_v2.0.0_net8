@@ -2,7 +2,35 @@
 
 > 日期：2026-05-15
 > 範圍：feat/加入OHT 整理後種子 → 升級至 net8.0-windows 完成
-> 建置狀態：Debug / Release 皆 **0 errors / 18 warnings**
+> 建置狀態：Debug / Release 皆 **0 errors / 0 warnings** ✅（TreatWarningsAsErrors 啟用）
+
+---
+
+## ✅ Code Review 後續修正紀錄（追記）
+
+依本報告建議，已於後續 commits 處理以下項目：
+
+| 編號 | 項目 | 處理 |
+|---|---|---|
+| Critical #1 | VehicleMessageSend 同步等待 async | 加入 `ConfigureAwait(false)`、`doWork` 改 async Task、`Task.Wait()` → `await ... .ConfigureAwait(false)` |
+| Critical #2 | `[Serializable]` 殘留 | 移除 `LoadunloadCmd` / `XmlHandler` 上不必要的 attribute |
+| Critical #3 | Opera / Opera_New 並存 | 已合併為單一 `Opera` 類別 |
+| Medium #11 | CommonMessage 升 net8.0 | 已升（原 netstandard2.0） |
+| Medium #10 | swallowed catch (Exception ex) | `MCSManagerAction.cs` 6 處 + `VehicleMessageSend.cs` 1 處改為 `logger.Error(ex)` |
+| Low #13 | 18 個建置警告 | 全部清掉，並啟用 `TreatWarningsAsErrors` |
+| Low #15 | AssemblyInfo.cs | 移除實體檔，中繼資料收進 csproj（`AssemblyTitle/Product/Company/Copyright/Version`） |
+
+### 仍延後的項目（需獨立 sprint + runtime 驗證）
+
+| 編號 | 項目 | 為什麼延後 |
+|---|---|---|
+| High #4 | Form1.cs 1132 行 拆 ViewModel/Service | 需先設計 MVP 架構與 UI 事件流，非單次重構可完成 |
+| High #5 | 392 處 `Thread.Sleep` / `SpinWait` 改 async | 每個 sleep 都關聯模擬時序，需逐一審視與 runtime 驗證；建議獨立分支與 A/B 測試 |
+| High #7 | SCApplication.cs 1970 行 上帝物件拆解 | 同上，需先盤點職責邊界 |
+| Medium #8 | DI 化 logger / config | 全專案改成 ctor 注入屬於架構級別改動，建議與 Form1 拆解一起做 |
+| Medium #9 | 強型別設定載入 | 不影響執行，可隨業務需求逐步引入 |
+| Medium #12 | GenericParsing → NuGet | 需確認 NuGet 上的版本 API 與內部 DLL 是否相容 |
+| Medium #10（剩餘） | 其餘 catch (Exception ex) 處理 | 多數已有 `logger.Error` 或具備吞例外的設計意圖，需個別評估 |
 
 ---
 

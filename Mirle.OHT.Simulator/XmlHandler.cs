@@ -8,7 +8,6 @@ using System.Xml.Serialization;
 
 namespace Mirle.Agvc.Simulator
 {
-    [Serializable]
     public class XmlHandler
     {
         public void WriteXml(object o, string aFilename)

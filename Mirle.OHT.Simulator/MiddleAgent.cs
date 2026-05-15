@@ -39,23 +39,25 @@ namespace Mirle.Agvc.Simulator
     public class MiddleAgent : IDisposable
     {
         #region Events
+        // 這些事件目前 Form1 有訂閱但 MiddleAgent 本身還沒有對應的觸發點，
+        // 屬於既有功能的預留位置 (TODO: 連線狀態變化要在 gRPC 連線層觸發)
+#pragma warning disable CS0067 // event is declared but never used
         public event EventHandler<string> OnTransferCancelEvent;
         public event EventHandler<string> OnTransferAbortEvent;
-
         public event EventHandler<string> OnConnected;
         public event EventHandler<string> OnDisConnected;
+#pragma warning restore CS0067
         public event EventHandler<string> OnCmdSend;
         public event EventHandler<string> OnCmdReceive;
         #endregion
         private EnumOperaType cmdOpera = 0;
         private bool reject41 = false;
-        private int abnormalErrorCode = 0;
         private LoggerAgent theLoggerAgent;
         private Vehicle vehicle;
         //private ID_144_STATUS_CHANGE_REP theVehicleInfo;
         private MiddlerConfigs middlerConfigs;
 
-        private Opera_New operaObject;
+        private Opera operaObject;
 
         //GRPC
         private Server server;
@@ -95,7 +97,7 @@ namespace Mirle.Agvc.Simulator
                 theLoggerAgent = LoggerAgent.Instance;
 
                 vehicle = new Vehicle();
-                operaObject = new Opera_New(this);
+                operaObject = new Opera(this);
 
                 isSuccess = isSuccess && vehicle.Vehicle_Initialize();
                 operaObject.theVehicleInfo = vehicle.Vehicle_Data;
