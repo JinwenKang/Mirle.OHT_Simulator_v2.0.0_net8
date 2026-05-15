@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<LoadunloadCmd xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <CmdText>AtoB</CmdText>
+  <StartAddress>A</StartAddress>
+  <EndAddress>B</EndAddress>
+  <CmdId>Cmd001</CmdId>
+  <CstId>CA0070</CstId>
+  <ActType>Loadunload</ActType>
+  <GuideSectionsStartToLoad />
+  <GuideAddressesStartToLoad />
+  <LoadAdr>28015</LoadAdr>
+  <GuideSectionsToDestination>
+    <string>0101</string>
+	<string>0092</string> 
+  </GuideSectionsToDestination>	
+  <GuideAddressesToDestination>
+    <string>18016</string>
+	<string>48014</string>
+	<string>20013</string>
+  </GuideAddressesToDestination>
+  <DestinationAdr>20013</DestinationAdr>
+  <SecDistance>100</SecDistance>
+</LoadunloadCmd>

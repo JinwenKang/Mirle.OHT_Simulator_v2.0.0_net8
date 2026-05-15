@@ -1,0 +1,83 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>Mirle.Agvc.Simulator</AssemblyName>
+    <RootNamespace>Mirle.Agvc.Simulator</RootNamespace>
+    <ApplicationIcon>模擬器 (1).ico</ApplicationIcon>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Deterministic>true</Deterministic>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AssemblyVersion>2.0.0.1</AssemblyVersion>
+    <FileVersion>2.0.0.1</FileVersion>
+    <!-- WinForms 在 net8.0-windows 下會大量觸發 CA1416；TFM 已限定 Windows，可安全抑制 -->
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+  </PropertyGroup>
+
+  <!-- 排除沒在用的舊範本目錄與歷史備份輸出 -->
+  <ItemGroup>
+    <Compile Remove="GrpcDemo\**" />
+    <None Remove="GrpcDemo\**" />
+    <EmbeddedResource Remove="GrpcDemo\**" />
+    <Content Remove="GrpcDemo\**" />
+  </ItemGroup>
+
+  <!-- NuGet 套件 -->
+  <ItemGroup>
+    <PackageReference Include="Elasticsearch.Net" Version="7.17.5" />
+    <PackageReference Include="NEST" Version="7.17.5" />
+    <PackageReference Include="Google.Protobuf" Version="3.25.1" />
+    <PackageReference Include="Grpc.Core" Version="2.46.6" />
+    <PackageReference Include="Grpc.Core.Api" Version="2.46.6" />
+    <PackageReference Include="NLog" Version="5.3.4" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
+  </ItemGroup>
+
+  <!-- 本地 DLL 參考 (SECS / TCPIP 通訊元件 + GenericParsing 解析器) -->
+  <ItemGroup>
+    <Reference Include="GenericParsing">
+      <HintPath>DLL\GenericParsing.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="SECSTrxControl">
+      <HintPath>DLL\SECSTrxControl.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="TCPIPTrxControl">
+      <HintPath>DLL\TCPIPTrxControl.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- 專案參考 -->
+  <ItemGroup>
+    <ProjectReference Include="..\CommonMessage\CommonMessage.csproj" />
+  </ItemGroup>
+
+  <!-- 設定檔複製 (Config / SaveConfig CSV、Log.ini、NLog.config、路徑 XML、AsServer.7z、TCPIPTrxControl.dll.config) -->
+  <ItemGroup>
+    <None Update="AsServer.7z" CopyToOutputDirectory="Always" />
+    <None Update="Log.ini" CopyToOutputDirectory="Always" />
+    <None Update="NLog.config" CopyToOutputDirectory="Always" />
+    <None Update="DLL\TCPIPTrxControl.dll.config" CopyToOutputDirectory="Always" />
+
+    <None Update="AtoA.xml" CopyToOutputDirectory="Always" />
+    <None Update="AtoB.xml" CopyToOutputDirectory="Always" />
+    <None Update="AtoG.xml" CopyToOutputDirectory="Always" />
+    <None Update="BtoA.xml" CopyToOutputDirectory="Always" />
+    <None Update="BtoB.xml" CopyToOutputDirectory="Always" />
+    <None Update="BtoG.xml" CopyToOutputDirectory="Always" />
+    <None Update="GtoA.xml" CopyToOutputDirectory="Always" />
+    <None Update="GtoB.xml" CopyToOutputDirectory="Always" />
+    <None Update="GtoG.xml" CopyToOutputDirectory="Always" />
+
+    <None Update="Config\**\*.csv" CopyToOutputDirectory="Always" />
+    <None Update="SaveConfig\**\*.csv" CopyToOutputDirectory="Always" />
+  </ItemGroup>
+
+</Project>

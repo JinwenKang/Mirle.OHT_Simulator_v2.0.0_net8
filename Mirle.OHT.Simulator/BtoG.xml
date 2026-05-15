@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<LoadunloadCmd xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <CmdText>BtoG</CmdText>
+  <StartAddress>B</StartAddress>
+  <EndAddress>G</EndAddress>
+  <CmdId>Cmd001</CmdId>
+  <CstId>CA0070</CstId>
+  <ActType>Loadunload</ActType>
+  <GuideSectionsStartToLoad />
+  <GuideAddressesStartToLoad> 
+  </GuideAddressesStartToLoad>
+  <LoadAdr>20013</LoadAdr>
+  <GuideSectionsToDestination>
+    <string>0091</string> 
+	<string>0161</string> 
+	<string>0151</string>
+	<string>0022</string>
+  </GuideSectionsToDestination>	
+  <GuideAddressesToDestination>
+    <string>20013</string>
+	<string>48012</string>
+	<string>48019</string>
+	<string>48005</string>
+	<string>20004</string>
+  </GuideAddressesToDestination>
+  <DestinationAdr>20004</DestinationAdr>
+  <SecDistance>100</SecDistance>
+</LoadunloadCmd>

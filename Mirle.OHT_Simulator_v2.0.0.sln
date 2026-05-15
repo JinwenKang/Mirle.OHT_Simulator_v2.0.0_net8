@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33723.286
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mirle.OHT_OHBC.Simulator", "Mirle.OHT.Simulator\Mirle.OHT_OHBC.Simulator.csproj", "{52941356-E626-42FA-8C04-80F38A304449}"
+	ProjectSection(ProjectDependencies) = postProject
+		{FE2C8303-9265-4544-B951-41B8036DAB34} = {FE2C8303-9265-4544-B951-41B8036DAB34}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CommonMessage", "CommonMessage\CommonMessage.csproj", "{FE2C8303-9265-4544-B951-41B8036DAB34}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{52941356-E626-42FA-8C04-80F38A304449}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{52941356-E626-42FA-8C04-80F38A304449}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{52941356-E626-42FA-8C04-80F38A304449}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{52941356-E626-42FA-8C04-80F38A304449}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FE2C8303-9265-4544-B951-41B8036DAB34}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FE2C8303-9265-4544-B951-41B8036DAB34}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FE2C8303-9265-4544-B951-41B8036DAB34}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FE2C8303-9265-4544-B951-41B8036DAB34}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {ABC161F5-1560-4A9E-A608-D49742B32B37}
+	EndGlobalSection
+EndGlobal
