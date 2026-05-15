@@ -44,7 +44,12 @@
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
   </ItemGroup>
 
-  <!-- 本地 DLL 參考 (SECS / TCPIP 通訊元件 + GenericParsing 解析器) -->
+  <!--
+    本地 DLL 參考
+    - SECSTrxControl 內部 binary 引用 hasp_net_windows，雖然 .cs 沒 using，但執行期會載入
+    - hasp_net_windows 又需要 native helper（hasp_windows_*.dll / apidsp_windows*.dll，由加密狗驅動提供）
+      若執行期出現「無法呼叫 HASP」可再把那些 native dll 放回 bin\Release 並加入 Content。
+  -->
   <ItemGroup>
     <Reference Include="GenericParsing">
       <HintPath>DLL\GenericParsing.dll</HintPath>
@@ -56,6 +61,10 @@
     </Reference>
     <Reference Include="TCPIPTrxControl">
       <HintPath>DLL\TCPIPTrxControl.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="hasp_net_windows">
+      <HintPath>DLL\hasp_net_windows.dll</HintPath>
       <Private>true</Private>
     </Reference>
   </ItemGroup>
