@@ -157,35 +157,34 @@ namespace Mirle.Agvc.Simulator
 
         private void ThreadBufferDataSave()
         {
+            // 用 thread-local StringBuilder 累積，避免 += 造成 O(n²) string 配置
+            var sb = new StringBuilder(capacity: 8192);
             while (true)
             {
                 try
                 {
-                    string totalMsg = "";
+                    sb.Clear();
                     queOutputLogData = queInputLogData;
                     queInputLogData = Queue.Synchronized(new Queue());
 
                     while (queOutputLogData.Count > 0)
                     {
                         var msg = queOutputLogData.Dequeue().ToString();
-                        totalMsg += msg + Environment.NewLine;
+                        sb.Append(msg).Append(Environment.NewLine);
                     }
 
-                    if (!string.IsNullOrWhiteSpace(totalMsg))
+                    if (sb.Length > 0)
                     {
-                        WriteLog(totalMsg);
+                        WriteLog(sb.ToString());
                     }
 
-                    //SpinWait.SpinUntil(() => false, logType.DequeueInterval);
                     Thread.Sleep(logType.DequeueInterval);
-
                 }
                 catch (Exception ex)
                 {
                     AddDebugLog("ThreadDataSave", ex.StackTrace);
                 }
             }
-
         }
 
         private void ThreadAsyncDataSave()

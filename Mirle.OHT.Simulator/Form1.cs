@@ -56,7 +56,6 @@ namespace Mirle.Agvc.Simulator
 
         public bool IsInSitu { get; set; } = false;
         public Stopwatch sw = new Stopwatch();
-        public string DebugLogMsg { get; set; } = "";
 
         SCApplication scApp = null;
 
@@ -154,28 +153,12 @@ namespace Mirle.Agvc.Simulator
             // ===== 新增結束 =====
         }
 
-        private void AppendDebugLogMsg(string msg)
-        {
-            try
-            {
-                DebugLogMsg = string.Concat(DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss.fff"), "\t", msg, "\r\n", DebugLogMsg);
-
-                if (DebugLogMsg.Length > 65535)
-                {
-                    DebugLogMsg = DebugLogMsg.Substring(65535);
-                }
-            }
-            catch (Exception ex)
-            {
-                LoggerAgent.Instance.LogMsg("Error", new LogFormat("Error", "5", GetType().Name + ":" + MethodBase.GetCurrentMethod().Name, "Device", "CarrierID", ex.StackTrace));
-            }
-        }
-
         private void MiddleAgent_OnCmdSendOrReceive(object sender, string msg)
         {
-            AppendDebugLogMsg(msg);
+            // 註：原本還會呼叫 AppendDebugLogMsg 寫到一個 DebugLogMsg 字串欄位，
+            // 但該欄位完全沒被 UI 顯示，純粹 dead code，且每筆都重建 65KB 字串
+            // 造成 40 台車情境下嚴重 GC 壓力與 UI 卡頓，已移除。
             LoggerAgent.Instance.LogMsg("Debug", new LogFormat("Debug", "5", GetType().Name + ":" + MethodBase.GetCurrentMethod().Name, "Device", "CarrierID", msg));
-
         }
 
         private void LoadConfigs()
@@ -430,7 +413,7 @@ namespace Mirle.Agvc.Simulator
 
         private void btnCleanRichTextBox_Click(object sender, EventArgs e)
         {
-            DebugLogMsg = "";
+            // 原 DebugLogMsg 已移除（dead code），此按鈕保留為 UI 相容性
         }
 
         private void btnSet_Click(object sender, EventArgs e)
