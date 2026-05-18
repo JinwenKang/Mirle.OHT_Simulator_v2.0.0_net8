@@ -30,6 +30,12 @@
 | Medium #8 | DI 化 logger / config | 全專案改成 ctor 注入屬於架構級別改動，建議與 Form1 拆解一起做 |
 | Medium #9 | 強型別設定載入 | 不影響執行，可隨業務需求逐步引入 |
 | Medium #12 | GenericParsing → NuGet | 需確認 NuGet 上的版本 API 與內部 DLL 是否相容 |
+
+### ❌ 已確認不適用（不要再提）
+
+| 項目 | 不做的原因 |
+|---|---|
+| gRPC channel 收斂（多 vehicle 共用一條 HTTP/2 連線）| **後端靠 port 號識別車號**，每台 vehicle 必須各自獨立連線；共用會直接違反後端協議。永久保持 per-vehicle channel。|
 | Medium #10（剩餘） | 其餘 catch (Exception ex) 處理 | 多數已有 `logger.Error` 或具備吞例外的設計意圖，需個別評估 |
 
 ---
