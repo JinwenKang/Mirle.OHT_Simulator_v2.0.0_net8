@@ -110,6 +110,20 @@
     <None Update="SaveConfig\**\*.csv" CopyToOutputDirectory="Always" />
   </ItemGroup>
 
+  <!--
+    Post-build：為 x86 apphost exe 設定 LARGE_ADDRESS_AWARE 旗標 (0x0020)。
+    .NET SDK 的 <LargeAddressAware> property 在 net8 apphost 不穩定，手動 patch
+    PE COFF header characteristics 欄位最可靠。
+    必要性：x86 process 預設只能用 2GB user-mode 記憶體，加旗標後在 64-bit
+    Windows 上可擴展到 4GB —— 300 台車模擬必須。
+  -->
+  <Target Name="PatchLargeAddressAware" AfterTargets="Build" Condition="'$(LargeAddressAware)' == 'true' AND '$(PlatformTarget)' == 'x86'">
+    <ItemGroup>
+      <_ExeToPatch Include="$(OutputPath)$(AssemblyName).exe" />
+    </ItemGroup>
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;$exe='%(_ExeToPatch.FullPath)'; $b=[IO.File]::ReadAllBytes($exe); $o=[BitConverter]::ToInt32($b,0x3C); $c=[BitConverter]::ToUInt16($b,$o+22); if (($c -band 0x0020) -eq 0) { $b[$o+22]=[byte](($c -bor 0x0020) -band 0xFF); [IO.File]::WriteAllBytes($exe,$b); Write-Host '  LARGE_ADDRESS_AWARE set on' $exe }&quot;" />
+  </Target>
+
   <!-- HASP 加密狗 native runtime（hasp_net_windows.dll 透過 P/Invoke 載入）-->
   <ItemGroup>
     <Content Include="hasp_windows_101490.dll" CopyToOutputDirectory="Always" />
