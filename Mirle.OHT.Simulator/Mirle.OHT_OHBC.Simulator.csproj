@@ -30,6 +30,10 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- WinForms 在 net8.0-windows 下會大量觸發 CA1416；TFM 已限定 Windows，可安全抑制 -->
     <NoWarn>$(NoWarn);CA1416</NoWarn>
+    <!-- Server GC：多執行緒高配置率場景吞吐遠勝預設 Workstation GC，
+         代價是稍多記憶體佔用，但對 40 台車模擬器是值得的取捨 -->
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
   </PropertyGroup>
 
   <!-- 排除沒在用的舊範本目錄與歷史備份輸出 -->
