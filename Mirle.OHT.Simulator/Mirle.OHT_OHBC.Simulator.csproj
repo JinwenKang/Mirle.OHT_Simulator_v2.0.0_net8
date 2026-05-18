@@ -18,6 +18,10 @@
       .NET 4.x AnyCPU 預設 Prefer32Bit 跑 32-bit；.NET 8 移除此旗標必須顯式 x86
     -->
     <PlatformTarget>x86</PlatformTarget>
+    <!-- 32-bit process 預設 user-mode address space 為 2GB；
+         加上 LARGEADDRESSAWARE 旗標後在 64-bit Windows 上可擴展到 4GB。
+         300 台車模擬必須超過 2GB 工作集，必要設定。 -->
+    <LargeAddressAware>true</LargeAddressAware>
     <Deterministic>true</Deterministic>
     <!-- 組件中繼資料：原 Properties/AssemblyInfo.cs 內容收進來，SDK 自動產生 -->
     <AssemblyTitle>Mirle.Agvc.Simulator</AssemblyTitle>

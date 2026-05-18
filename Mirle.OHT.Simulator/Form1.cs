@@ -476,15 +476,28 @@ namespace Mirle.Agvc.Simulator
 
         private void updateDGV()
         {
-            dgvOht.Rows.Clear();
-
-            List<MiddleAgent> agentLst = scApp.AgentDic.Values.ToList();
-
-            foreach (MiddleAgent agent in agentLst)
+            // 一次性更新避免每加一 row 都觸發 layout / autosize / repaint
+            // 300 台車場景單一次 updateDGV 可省下大量 UI 重繪
+            dgvOht.SuspendLayout();
+            try
             {
-                string[] row = { agent.RemoteIP(), agent.VhID() };
+                dgvOht.Rows.Clear();
 
-                dgvOht.Rows.Add(row);
+                List<MiddleAgent> agentLst = scApp.AgentDic.Values.ToList();
+
+                // 用 AddRange 一次塞所有列，比逐筆 Add 快
+                var rows = new List<DataGridViewRow>(agentLst.Count);
+                foreach (MiddleAgent agent in agentLst)
+                {
+                    var row = new DataGridViewRow();
+                    row.CreateCells(dgvOht, agent.RemoteIP(), agent.VhID());
+                    rows.Add(row);
+                }
+                dgvOht.Rows.AddRange(rows.ToArray());
+            }
+            finally
+            {
+                dgvOht.ResumeLayout();
             }
         }
 
@@ -1002,12 +1015,17 @@ namespace Mirle.Agvc.Simulator
                 completionPortThreadsUsed = completionPortThreadsMax - completionPortThreadsAvailable;
             }
 
-            // 更新 UI 元素必須在 UI 執行緒上進行
-            this.Invoke((System.Windows.Forms.MethodInvoker)delegate
+            // 更新 UI 元素必須在 UI 執行緒上進行；
+            // 用 BeginInvoke 非同步排程，避免 monitor thread 被 UI 卡住、
+            // 也避免 UI 忙時反過來阻塞這條診斷 thread
+            if (!this.IsDisposed)
             {
-                txtWorkThread.Text = workerThreadsUsed.ToString();
-                txtIOThread.Text = completionPortThreadsUsed.ToString();
-            });
+                this.BeginInvoke((System.Windows.Forms.MethodInvoker)delegate
+                {
+                    txtWorkThread.Text = workerThreadsUsed.ToString();
+                    txtIOThread.Text = completionPortThreadsUsed.ToString();
+                });
+            }
         }
 
         private void bt_sendTeachData_Click(object sender, EventArgs e)

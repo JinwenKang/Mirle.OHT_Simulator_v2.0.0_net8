@@ -30,7 +30,12 @@ namespace Mirle.Agvc.Simulator
 
         private DateTime dtTimeOfOverdueFileCheck = DateTime.Now;
 
-        private static object theWriteLocker = new object();
+        // 改 per-instance：原本 static 會把不同 logger（Debug/Error/Trace...）
+        // 的寫檔全部 serialize，多 vehicle 多日誌類別下嚴重競爭。
+        private readonly object theWriteLocker = new object();
+
+        // 用累積寫入量取代每次 FileInfo.Length syscall
+        private long bytesWrittenSinceLastSizeCheck = 0;
 
         private Queue queInputLogData;
         private Queue queOutputLogData;
@@ -66,6 +71,9 @@ namespace Mirle.Agvc.Simulator
             }
         }
 
+        // 累積 N bytes 才做一次 FileInfo.Length / rotation 檢查，避免每筆寫入 syscall
+        private const long SIZE_CHECK_BYTE_THRESHOLD = 1024 * 1024;   // 1 MB
+
         private void WriteLog(string sMessage)
         {
             lock (theWriteLocker)
@@ -76,24 +84,29 @@ namespace Mirle.Agvc.Simulator
                     fileWriteStream.Write(sMessage);   //  寫入檔案
                     fileWriteStream.Flush();
                     iStep = iStep + 1;
+                    bytesWrittenSinceLastSizeCheck += sMessage.Length;
 
-                    var fileSize = new FileInfo(strFileFullPath).Length;
-                    if (fileSize > lngLogMaxSize)
+                    // 只有累積寫入量超過閾值時才查實際檔案大小（避免每次都 syscall）
+                    if (bytesWrittenSinceLastSizeCheck >= SIZE_CHECK_BYTE_THRESHOLD)
                     {
-                        // 超過限制的大小，換檔再刪除
-                        //SpinWait.SpinUntil(() => false, 1000); // 避免產生同時間的檔案
-                        Thread.Sleep(1000);
-                        var dateTime = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
-                        var copyName = string.Concat(strDirectoryFullPath, @"/", logType.LogFileName, "_", dateTime, logType.FileExtension);
-                        File.Copy(strFileFullPath, copyName);
-                        iStep = iStep + 1;
+                        bytesWrittenSinceLastSizeCheck = 0;
+                        var fileSize = new FileInfo(strFileFullPath).Length;
+                        if (fileSize > lngLogMaxSize)
+                        {
+                            // 超過限制大小，換檔（注意：原本 Sleep(1000) 在鎖內會阻塞同 logger 的其他寫入，
+                            // 但本 lock 已是 per-instance，影響範圍縮小到單一 LogType）
+                            var dateTime = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+                            var copyName = string.Concat(strDirectoryFullPath, @"/", logType.LogFileName, "_", dateTime, logType.FileExtension);
+                            File.Copy(strFileFullPath, copyName);
+                            iStep = iStep + 1;
 
-                        // 清除檔案內容
-                        fileWriteStream.Close();
-                        fileStream = new FileStream(strFileFullPath, FileMode.Truncate, FileAccess.Write, FileShare.Read);
-                        fileWriteStream = new StreamWriter(fileStream, encodingType);
+                            // 清除檔案內容
+                            fileWriteStream.Close();
+                            fileStream = new FileStream(strFileFullPath, FileMode.Truncate, FileAccess.Write, FileShare.Read);
+                            fileWriteStream = new StreamWriter(fileStream, encodingType);
 
-                        iStep = iStep + 1;
+                            iStep = iStep + 1;
+                        }
                     }
 
                     if (logType.DelOverdueFile)
