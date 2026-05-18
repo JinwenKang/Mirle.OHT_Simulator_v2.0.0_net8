@@ -657,7 +657,8 @@ namespace Mirle.Agvc.Simulator
         {
             string msg = $"[Cmd_41_RECEIVE] [PacketID = {e.PacketID}][SeqNum = {e.iSeqNum}][ObjPacket = {e.objPacket}]";
             OnCmdReceive?.Invoke(this, msg);
-            theLoggerAgent.LogMsg("Comm", new LogFormat("Comm", "1", GetType().Name + ":" + MethodBase.GetCurrentMethod().Name, "Device", "CarrierID"
+            // 用字串常數取代 MethodBase.GetCurrentMethod() 反射，省下每筆命令的 stack frame 查找
+            theLoggerAgent.LogMsg("Comm", new LogFormat("Comm", "1", "MiddleAgent:Receive_Cmd41_ModeChange", "Device", "CarrierID"
                 , msg));
 
 
@@ -1039,7 +1040,8 @@ namespace Mirle.Agvc.Simulator
         {
             string msg = $"[SEND] [ID = {wrapper.ID}][SeqNum = {wrapper.SeqNum}] " + wrapper.ToString();
             OnCmdSend?.Invoke(this, msg);
-            theLoggerAgent.LogMsg("Comm", new LogFormat("Comm", "1", GetType().Name + ":" + MethodBase.GetCurrentMethod().Name, "Device", "CarrierID"
+            // 用字串常數取代 MethodBase.GetCurrentMethod() 反射
+            theLoggerAgent.LogMsg("Comm", new LogFormat("Comm", "1", "MiddleAgent:SendCommandWrapper", "Device", "CarrierID"
                  , msg));
 
             Task.Run(() => vehicleMessageSend.sendMessageUnary(wrapper));

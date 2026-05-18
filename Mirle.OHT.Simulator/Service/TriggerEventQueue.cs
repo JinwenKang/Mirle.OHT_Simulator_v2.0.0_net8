@@ -27,21 +27,19 @@ namespace com.mirle.ibg3k0.sc.Service.gRPC
                 ChangeEventStruct eventStruct = _eventStruct;
                 if (eventStruct.EventHandler != null)
                 {
-                    string eventTraceInfo = string.Format("Begin Trigger Event Handler By Queue-Pack ID:{0},Seq Num:{1},name:{2},[Thread ID:{3}]"
-                                                        , eventStruct.EventArgs.PacketID
-                                                        , eventStruct.EventArgs.iSeqNum.ToString()
-                                                        , this.name
-                                                        , Thread.CurrentThread.ManagedThreadId);
-                    logger.Info(eventTraceInfo);
-                    DateTime startTime = DateTime.Now;
+                    // 改用 NLog 樣板形式：Info level 沒啟用時內部會跳過 string.Format，節省熱路徑 CPU。
+                    // 原本是先 string.Format(...) 成字串再傳入 logger.Info，無論 level 開不開都 eager 配置。
+                    logger.Info("Begin Trigger Event Handler By Queue-Pack ID:{0},Seq Num:{1},name:{2},[Thread ID:{3}]",
+                        eventStruct.EventArgs.PacketID,
+                        eventStruct.EventArgs.iSeqNum,
+                        this.name,
+                        Thread.CurrentThread.ManagedThreadId);
                     eventStruct.EventHandler(this, eventStruct.EventArgs);
-                    double totalMS = DateTime.Now.Subtract(startTime).TotalMilliseconds;
-                    eventTraceInfo = string.Format("Complete Trigger Event Handler By Queue-Pack ID:{0},Seq Num:{1},name:{2},[Thread ID:{3}]"
-                                                        , eventStruct.EventArgs.PacketID
-                                                        , eventStruct.EventArgs.iSeqNum.ToString()
-                                                        , this.name
-                                                        , Thread.CurrentThread.ManagedThreadId);
-                    logger.Info(eventTraceInfo);
+                    logger.Info("Complete Trigger Event Handler By Queue-Pack ID:{0},Seq Num:{1},name:{2},[Thread ID:{3}]",
+                        eventStruct.EventArgs.PacketID,
+                        eventStruct.EventArgs.iSeqNum,
+                        this.name,
+                        Thread.CurrentThread.ManagedThreadId);
                 }
             };
             lock (_eventDelegateQueue)

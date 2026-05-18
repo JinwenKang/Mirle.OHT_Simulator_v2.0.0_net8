@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -37,8 +38,9 @@ namespace Mirle.Agvc.Simulator
         // 用累積寫入量取代每次 FileInfo.Length syscall
         private long bytesWrittenSinceLastSizeCheck = 0;
 
-        private Queue queInputLogData;
-        private Queue queOutputLogData;
+        // 改 ConcurrentQueue：原 Queue.Synchronized 是 .NET Framework 時代的全鎖包裝，
+        // ConcurrentQueue 用 lock-free 演算法，多 producer / single consumer 場景效能高很多。
+        private ConcurrentQueue<string> queInputLogData;
         private Thread thdDataSave;
 
         private static FileStream debugFileStream;
@@ -170,19 +172,18 @@ namespace Mirle.Agvc.Simulator
 
         private void ThreadBufferDataSave()
         {
-            // 用 thread-local StringBuilder 累積，避免 += 造成 O(n²) string 配置
+            // 重用 StringBuilder，避免 += 造成 O(n²) string 配置
             var sb = new StringBuilder(capacity: 8192);
             while (true)
             {
                 try
                 {
                     sb.Clear();
-                    queOutputLogData = queInputLogData;
-                    queInputLogData = Queue.Synchronized(new Queue());
 
-                    while (queOutputLogData.Count > 0)
+                    // ConcurrentQueue.TryDequeue 是 lock-free，
+                    // 一次把當下 queue 內容全部排乾再寫，不需要換指標
+                    while (queInputLogData.TryDequeue(out var msg))
                     {
-                        var msg = queOutputLogData.Dequeue().ToString();
                         sb.Append(msg).Append(Environment.NewLine);
                     }
 
@@ -206,8 +207,7 @@ namespace Mirle.Agvc.Simulator
             {
                 try
                 {
-                    string sLog = queInputLogData.Dequeue().ToString();
-                    if (null != sLog)
+                    if (queInputLogData.TryDequeue(out var sLog) && sLog != null)
                     {
                         WriteLog(sLog);
                     }
@@ -270,8 +270,7 @@ namespace Mirle.Agvc.Simulator
         {
             logType = aLogType;
 
-            queInputLogData = Queue.Synchronized(new Queue());
-            queOutputLogData = Queue.Synchronized(new Queue());
+            queInputLogData = new ConcurrentQueue<string>();
 
             thdDataSave = new Thread(ThreadBufferDataSave);
             thdDataSave.IsBackground = true;
