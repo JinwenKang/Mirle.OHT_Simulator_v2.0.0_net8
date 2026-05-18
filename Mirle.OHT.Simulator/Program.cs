@@ -20,15 +20,13 @@ namespace Mirle.Agvc.Simulator
             Environment.SetEnvironmentVariable("GRPC_TRACE", "http,server,keepalive");
             //// 設定日誌詳細程度為 DEBUG
             Environment.SetEnvironmentVariable("GRPC_VERBOSITY", "DEBUG");
-            //private NLog.Logger logger = LogManager.GetCurrentClassLogger();
-            // 設定執行緒池大小
-            int minWorkerThreads = 100;
-            int minCompletionPortThreads = 100;
-            //int maxWorkerThreads = 1000;
-            //int maxCompletionPortThreads = 1000;
-
+            // ThreadPool min thread 設定
+            // 目標：支援 300 台車模擬。每車有多個 Thread.Sleep polling 迴圈 + gRPC + Timer。
+            // 預估同時活躍 thread 數 = 300 * 3 ≈ 900，給 1024 buffer 避免 ThreadPool 增長延遲。
+            // 注意：min thread 越高，閒置時 process 記憶體越多；正式上線可依車數調整。
+            const int minWorkerThreads = 1024;
+            const int minCompletionPortThreads = 1024;
             ThreadPool.SetMinThreads(minWorkerThreads, minCompletionPortThreads);
-            //ThreadPool.SetMaxThreads(maxWorkerThreads, maxCompletionPortThreads);
             // NLog Error target 實際寫入路徑（見 NLog.config）：
             //   D:\OHTC_Sim_Log\yyyyMMdd\Error.log
             const string LOG_HINT = @"D:\OHTC_Sim_Log\{yyyyMMdd}\Error.log";

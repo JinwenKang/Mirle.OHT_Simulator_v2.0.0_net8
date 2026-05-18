@@ -135,7 +135,10 @@ namespace com.mirle.ibg3k0.sc.Service.gRPC
         }
         //const int SEND_MESSAGE_TIME_OUT_SECONDS = 30;
         //const int SEND_MESSAGE_CANCEL_TOKEN_TIME_OUT_MILLISECONDS = 30_000;
-        private static readonly SemaphoreSlim semaphore = new SemaphoreSlim(200);
+        // per-vehicle 並發送出 quota；原本是 static 200 全 vehicle 共享，
+        // 300 台車情境下會嚴重競爭。每車 16 個 in-flight 已足夠 gRPC 並發送出，
+        // 且彼此不互相阻塞。
+        private readonly SemaphoreSlim semaphore = new SemaphoreSlim(16);
 
         private async Task<(bool isSuccess, WrapperMessage message)> SendMessageInternalAsync(
             WrapperMessage sendWrapperMsg,
