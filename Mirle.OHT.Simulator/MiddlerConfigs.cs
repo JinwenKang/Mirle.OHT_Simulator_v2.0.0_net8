@@ -45,7 +45,7 @@ namespace Mirle.Agvc.Simulator
         /// 開啟時：收到 ID_36 NextAction.ActType=Load 時，將 Move 命令就地升級為 Load。
         /// 關閉時：靜默忽略 NextAction，OHT 繼續原 Move 命令走到終點。
         /// </summary>
-        public bool InSectionLoadAssignment { get; set; } = false;
+        public bool InSectionLoadAssignment { get; set; } = true;
         // ===== 新增結束 =====
     }
 }

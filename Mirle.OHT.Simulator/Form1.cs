@@ -66,11 +66,116 @@ namespace Mirle.Agvc.Simulator
             InitializeComponent();
         }
 
+        // Store vehicle map data for auto-fill
+        private Dictionary<string, string[]> _vehicleMapData = new Dictionary<string, string[]>();
+        // Store section data for filtering
+        private List<string[]> _sectionData = new List<string[]>();
+
+        private void LoadVehicleIDs()
+        {
+            try
+            {
+                string csvPath = Path.Combine(Application.StartupPath, "Config", "VEHICLEMAP.csv");
+                if (File.Exists(csvPath))
+                {
+                    var lines = File.ReadAllLines(csvPath);
+                    for (int i = 1; i < lines.Length; i++) // skip header
+                    {
+                        var fields = lines[i].Split(',');
+                        if (fields.Length >= 8 && !string.IsNullOrWhiteSpace(fields[0]))
+                        {
+                            txtVhID.Items.Add(fields[0].Trim());
+                            _vehicleMapData[fields[0].Trim()] = fields;
+                        }
+                    }
+                    if (txtVhID.Items.Count > 0)
+                        txtVhID.SelectedIndex = 0;
+                }
+
+                // Load address data
+                string addrPath = Path.Combine(Application.StartupPath, "Config", "AADDRESS.csv");
+                if (File.Exists(addrPath))
+                {
+                    var lines = File.ReadAllLines(addrPath);
+                    for (int i = 1; i < lines.Length; i++)
+                    {
+                        var fields = lines[i].Split(',');
+                        if (fields.Length > 0 && !string.IsNullOrWhiteSpace(fields[0]))
+                        {
+                            tbx_init_add_id.Items.Add(fields[0].Trim());
+                        }
+                    }
+                }
+
+                // Load section data
+                string secPath = Path.Combine(Application.StartupPath, "Config", "ASECTION.csv");
+                if (File.Exists(secPath))
+                {
+                    var lines = File.ReadAllLines(secPath);
+                    for (int i = 1; i < lines.Length; i++)
+                    {
+                        var fields = lines[i].Split(',');
+                        if (fields.Length >= 3)
+                        {
+                            _sectionData.Add(fields);
+                        }
+                    }
+                }
+
+                if (tbx_init_add_id.Items.Count > 0)
+                    tbx_init_add_id.SelectedIndex = 0;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Load config CSV failed: " + ex.Message);
+            }
+        }
+
+        private void txtVhID_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (txtVhID.SelectedItem == null) return;
+            string selectedId = txtVhID.SelectedItem.ToString();
+            if (_vehicleMapData.ContainsKey(selectedId))
+            {
+                var fields = _vehicleMapData[selectedId];
+                // GRPC_LOCAL_PORT = index 5, GRPC_REMOTE_PORT = index 7
+                txtLocalPort.Text = fields[5].Trim();
+                txtPort.Text = fields[7].Trim();
+                // Also fill IPs
+                txtLocalIP.Text = fields[4].Trim();
+                txtIp.Text = fields[6].Trim();
+            }
+        }
+
+        private void tbx_init_add_id_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (tbx_init_add_id.SelectedItem == null) return;
+            string selectedAddr = tbx_init_add_id.SelectedItem.ToString();
+
+            tbx_init_sec_id.Items.Clear();
+            foreach (var sec in _sectionData)
+            {
+                // sec[0]=Id, sec[1]=FromAddress, sec[2]=ToAddress
+                if (sec[1].Trim() == selectedAddr || sec[2].Trim() == selectedAddr)
+                {
+                    tbx_init_sec_id.Items.Add(sec[0].Trim());
+                }
+            }
+            if (tbx_init_sec_id.Items.Count > 0)
+                tbx_init_sec_id.SelectedIndex = 0;
+        }
+
         private void Form1_Load(object sender, EventArgs e)
         {
+            LoadVehicleIDs();
             LoadConfigs();
             scApp = SCApplication.getInstance();
             ConfigToUI();
+
+            if (cmbAlarmLevel.Items.Count > 0)
+            {
+                cmbAlarmLevel.SelectedIndex = 0;
+            }
 
             LoadXmls();
 
@@ -214,7 +319,7 @@ namespace Mirle.Agvc.Simulator
             middlerConfigs.CycleRunIntervalMs = int.Parse(configHandler.GetString("Middler", "CycleRunIntervalMs ", "4000"));
 
             // ===== In-Section Load Assignment =====
-            middlerConfigs.InSectionLoadAssignment = bool.Parse(configHandler.GetString("Middler", "InSectionLoadAssignment", "false"));
+            middlerConfigs.InSectionLoadAssignment = bool.Parse(configHandler.GetString("Middler", "InSectionLoadAssignment", "true"));
             // ===== 新增結束 =====
         }
 
@@ -235,7 +340,23 @@ namespace Mirle.Agvc.Simulator
             string vh_no = dgvOht.SelectedRows[0].Cells[1].Value.ToString();
             if (scApp.AgentDic.ContainsKey(vh_no))
             {
-                scApp.AgentDic[vh_no].SetAlarmToOHBC(txtAlarmCode.Text.Trim(), ErrorStatus.ErrSet);
+                scApp.AgentDic[vh_no].SetAlarmToOHBC(txtAlarmCode.Text.Trim(), ErrorStatus.ErrSet, GetSelectedAlarmLevel());
+            }
+        }
+
+        private ErrorLevel GetSelectedAlarmLevel()
+        {
+            if (cmbAlarmLevel.SelectedItem == null)
+            {
+                return ErrorLevel.None;
+            }
+            if (cmbAlarmLevel.SelectedItem.ToString() == "Error")
+            {
+                return ErrorLevel.Error;
+            }
+            else
+            {
+                return ErrorLevel.Warn;
             }
         }
 
@@ -265,7 +386,7 @@ namespace Mirle.Agvc.Simulator
                     return;
                 }
 
-                if (txtVhID.Text.Trim().Equals(string.Empty))
+                if (txtVhID.Text == null || txtVhID.Text.Trim().Equals(string.Empty))
                 {
                     MessageBox.Show("Please Vehicle ID.");
                     return;
@@ -524,7 +645,7 @@ namespace Mirle.Agvc.Simulator
 
         }
 
-        private void stopSet_button_Click(object sender, EventArgs e)
+        private async void stopSet_button_Click(object sender, EventArgs e)
         {
             if (dgvOht.SelectedRows.Count <= 0)
             {
@@ -535,11 +656,17 @@ namespace Mirle.Agvc.Simulator
             string vh_no = dgvOht.SelectedRows[0].Cells[1].Value.ToString();
             if (scApp.AgentDic.ContainsKey(vh_no))
             {
-                scApp.AgentDic[vh_no].SetStopSignal();
+                var agent = scApp.AgentDic[vh_no];
+                await Task.Run(() =>
+                {
+                    agent.SetStopSignal();
+                    agent.Send_Cmd194_AlarmReport("99999", ErrorStatus.ErrSet, ErrorLevel.Error);
+                    agent.SetVehicleToManual(0);
+                });
             }
         }
 
-        private void stopClear_button_Click(object sender, EventArgs e)
+        private async void stopClear_button_Click(object sender, EventArgs e)
         {
             if (dgvOht.SelectedRows.Count <= 0)
             {
@@ -550,7 +677,14 @@ namespace Mirle.Agvc.Simulator
             string vh_no = dgvOht.SelectedRows[0].Cells[1].Value.ToString();
             if (scApp.AgentDic.ContainsKey(vh_no))
             {
-                scApp.AgentDic[vh_no].ClearStopSignal();
+                var agent = scApp.AgentDic[vh_no];
+                await Task.Run(() =>
+                {
+                    agent.ClearStopSignal();
+                    // ClearStopSignal() already sends ID_136 Initial; avoid immediate duplicate in reset path.
+                    agent.SetVehicleToManual(1, false);
+                    agent.Send_Cmd194_AlarmReport("0", ErrorStatus.ErrReset, ErrorLevel.None);
+                });
             }
         }
 
@@ -571,7 +705,7 @@ namespace Mirle.Agvc.Simulator
             string vh_no = dgvOht.SelectedRows[0].Cells[1].Value.ToString();
             if (scApp.AgentDic.ContainsKey(vh_no))
             {
-                scApp.AgentDic[vh_no].SetAlarmToOHBC(txtAlarmCode.Text.Trim(), ErrorStatus.ErrReset);
+                scApp.AgentDic[vh_no].SetAlarmToOHBC(txtAlarmCode.Text.Trim(), ErrorStatus.ErrReset, ErrorLevel.None);
             }
         }
 
@@ -736,7 +870,7 @@ namespace Mirle.Agvc.Simulator
 
         private void btnSetJump_Click(object sender, EventArgs e)
         {
-            if(chbSetFlyToTarget.Checked)
+            if (chbSetFlyToTarget.Checked)
             {
                 scApp.setIsJumpToTarget(true);
             }
@@ -768,7 +902,6 @@ namespace Mirle.Agvc.Simulator
             string vh_no = dgvOht.SelectedRows[0].Cells[1].Value.ToString();
             if (scApp.AgentDic.ContainsKey(vh_no))
             {
-
                 scApp.AgentDic[vh_no].SetVehicleToManual(0);
             }
         }
@@ -841,7 +974,7 @@ namespace Mirle.Agvc.Simulator
             //控制斷線測試的 flag
             discon_flag = true;
 
-            while(discon_flag)
+            while (discon_flag)
             {
                 //將 Dictionary 中所有的 agent 資源釋放，並清乾淨 Dictionary
                 foreach (var agent in scApp.AgentDic)
@@ -898,9 +1031,9 @@ namespace Mirle.Agvc.Simulator
                 List<com.mirle.ibg3k0.sc.Data.VO.Section> lstSection = scApp.ConfigDataBLL.loadSection();
                 lstSection = lstSection.Where(section => Convert.ToInt32(section.Distance) > 4000).ToList();
                 List<AutoSecAdr> autoSecAdrLst = new List<AutoSecAdr>();
-                foreach(com.mirle.ibg3k0.sc.Data.VO.Section sec in lstSection)
+                foreach (com.mirle.ibg3k0.sc.Data.VO.Section sec in lstSection)
                 {
-                    autoSecAdrLst.Add(new AutoSecAdr() { Sec = sec.ID, Address = sec.From_Adr});
+                    autoSecAdrLst.Add(new AutoSecAdr() { Sec = sec.ID, Address = sec.From_Adr });
                     autoSecAdrLst.Add(new AutoSecAdr() { Sec = sec.ID, Address = sec.To_Adr });
                 }
                 int i = 0;
@@ -966,7 +1099,7 @@ namespace Mirle.Agvc.Simulator
             try
             {
                 int time = 0;
-                if(int.TryParse(tbxDelayTime.Text, out time))
+                if (int.TryParse(tbxDelayTime.Text, out time))
                 {
                     scApp.setOHTCReplyDelayTime(time);
                 }
@@ -981,7 +1114,7 @@ namespace Mirle.Agvc.Simulator
             }
         }
 
-        
+
         private void btThreadStart_Click(object sender, EventArgs e)
         {
             timerThreadMonitor.Start();
@@ -1051,7 +1184,7 @@ namespace Mirle.Agvc.Simulator
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
                     string selectedFilePath = openFileDialog.FileName;
-                    
+
                     if (!File.Exists(selectedFilePath))
                     {
                         MessageBox.Show("Selected file does not exist.");
@@ -1128,6 +1261,20 @@ namespace Mirle.Agvc.Simulator
             }
 
             logger.Info($"[InSectionLoad] Global mode changed to: {(enabled ? "ON" : "OFF")}");
+        }
+
+        private void Send_136_Initial_Click(object sender, EventArgs e)
+        {
+            if (dgvOht.SelectedRows.Count <= 0)
+            {
+                MessageBox.Show("Please Select OHT.");
+                return;
+            }
+            string vh_no = dgvOht.SelectedRows[0].Cells[1].Value.ToString();
+            if (scApp.AgentDic.ContainsKey(vh_no))
+            {
+                scApp.AgentDic[vh_no].Send_Cmd136_TransferEventInitial();
+            }
         }
         // ===== 新增結束 =====
     }

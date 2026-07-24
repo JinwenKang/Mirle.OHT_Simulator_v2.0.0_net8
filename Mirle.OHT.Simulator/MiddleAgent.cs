@@ -33,6 +33,7 @@ using NLog;
 using Mirle.Agvc.Simulator.App;
 using System.Diagnostics;
 using System.Reflection.Emit;
+using static System.Windows.Forms.AxHost;
 
 namespace Mirle.Agvc.Simulator
 {
@@ -357,23 +358,35 @@ namespace Mirle.Agvc.Simulator
             }
         }
 
-        public void SetAlarmToOHBC(string alarm_code, ErrorStatus stat)
+        public void SetAlarmToOHBC(string alarm_code, ErrorStatus stat, ErrorLevel alarmLevel)
         {
-            Send_Cmd194_AlarmReport(alarm_code, stat);
+            Send_Cmd194_AlarmReport(alarm_code, stat, alarmLevel);
         }
 
         public void SetStopSignal()
         {
             operaObject.theVehicleInfo.ErrorStatus = VhStopSingle.StopSingleOn;
+            operaObject.SetCmd134ReportEnabled(false);
 
-            Send_Cmd144_StatusChangeReport(0);
+            if (operaObject.recent31Cmd != null)
+            {
+                // 有命令執行中：同步回報 ID_132 CmpStatusVehicleAbort，避免與下一筆 ID_31 並行造成狀態/位置上報交錯
+                logger.Info($"Vh:[{VhID()}] StopSet with executing ID_31 (CmdID:[{operaObject.recent31Cmd.CmdID}]), trigger Send_Cmd132_AbnormalEndByStopSet");
+                operaObject.Send_Cmd132_AbnormalEndByStopSet();
+            }
+            else
+            {
+                // 無命令：直接送 Cmd144 狀態變更
+                Send_Cmd144_StatusChangeReport(0);
+            }
         }
 
         public void ClearStopSignal()
         {
             operaObject.theVehicleInfo.ErrorStatus = VhStopSingle.StopSingleOff;
-
+            Send_Cmd136_TransferEventInitial();
             Send_Cmd144_StatusChangeReport(0);
+            operaObject.SetCmd134ReportEnabled(true, true);
         }
 
         public void setCstID(string cst_id)
@@ -460,6 +473,13 @@ namespace Mirle.Agvc.Simulator
             if (cmdOpera == EnumOperaType.RejectCommand)
             {
                 Send_Cmd131_TransferResponse(transRequest, e.iSeqNum, 1, e, "reject test");
+                return;
+            }
+
+            if (operaObject.IsPauseActive())
+            {
+                logger.Warn($"Vh:[{VhID()}] Command Rejected, CmdID:[{transRequest.CmdID}], Reason: Vehicle is paused");
+                Send_Cmd131_TransferResponse(transRequest, e.iSeqNum, 1, e, "Vehicle is paused");
                 return;
             }
             
@@ -859,7 +879,6 @@ namespace Mirle.Agvc.Simulator
             Send_Cmd191_AlarmResetResponse(e.iSeqNum, replyCode, e);
             //SpinWait.SpinUntil(() => false, 1000);
             Thread.Sleep(1000);
-            Send_Cmd194_AlarmReport("0", ErrorStatus.ErrReset);
         }
 
         public void Send_Cmd191_AlarmResetResponse(int seqNum, int replyCode, gRPCEventArgs e)
@@ -886,7 +905,7 @@ namespace Mirle.Agvc.Simulator
         #endregion
 
         #region Send
-        public void Send_Cmd194_AlarmReport(string alarmCode, ErrorStatus status)
+        public void Send_Cmd194_AlarmReport(string alarmCode, ErrorStatus status, ErrorLevel alarmLevel)
         {
             try
             {
@@ -894,7 +913,8 @@ namespace Mirle.Agvc.Simulator
                 ID_194_ALARM_REPORT iD_194_ALARM_REPORT = new ID_194_ALARM_REPORT();
                 iD_194_ALARM_REPORT.ErrCode = alarmCode;
                 iD_194_ALARM_REPORT.ErrStatus = status;
-                iD_194_ALARM_REPORT.ErrDescription = "Alarm Description";
+                iD_194_ALARM_REPORT.ErrorLevel = alarmLevel;
+                iD_194_ALARM_REPORT.ErrDescription = "Alarm Description By OP";
 
                 WrapperMessage wrapper = new WrapperMessage
                 {
@@ -1107,7 +1127,7 @@ namespace Mirle.Agvc.Simulator
             return middlerConfigs.VhID;
         }
 
-        public void SetVehicleToManual(int mode)
+        public void SetVehicleToManual(int mode, bool sendInitialWhenAutoRemote = true)
         {
             if (mode == 0)      //Set to Manual
             {
@@ -1115,11 +1135,18 @@ namespace Mirle.Agvc.Simulator
             }
             else if (mode == 1) //Set to AutoRemote
             {
+                if (sendInitialWhenAutoRemote)
+                {
+                    Send_Cmd136_TransferEventInitial();
+                }
                 operaObject.theVehicleInfo.ModeStatus = VHModeStatus.AutoRemote;
             }
             Send_Cmd144_StatusChangeReport(0);
         }
-
+        public void Send_Cmd136_TransferEventInitial()
+        {
+            operaObject.Send_Cmd136_TransferEventInitial();
+        }
         // ===== 功能二：OHTC連線切換 - 新增方法 =====
 
         /// <summary>

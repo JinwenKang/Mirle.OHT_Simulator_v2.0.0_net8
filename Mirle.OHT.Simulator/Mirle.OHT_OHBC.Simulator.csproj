@@ -28,9 +28,9 @@
     <Product>Mirle.Agvc.Simulator</Product>
     <Company>Mirle Automation Corporation</Company>
     <Copyright>Copyright © Mirle Automation Corporation</Copyright>
-    <AssemblyVersion>2.0.0.14</AssemblyVersion>
-    <FileVersion>2.0.0.14</FileVersion>
-    <Version>2.0.0.14</Version>
+    <AssemblyVersion>2.0.0.15</AssemblyVersion>
+    <FileVersion>2.0.0.15</FileVersion>
+    <Version>2.0.0.15</Version>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- WinForms 在 net8.0-windows 下會大量觸發 CA1416；TFM 已限定 Windows，可安全抑制 -->
     <NoWarn>$(NoWarn);CA1416</NoWarn>
@@ -132,6 +132,44 @@
     <Content Include="hasp_windows_x64_24266.dll" CopyToOutputDirectory="Always" />
     <Content Include="apidsp_windows.dll" CopyToOutputDirectory="Always" />
     <Content Include="apidsp_windows_x64.dll" CopyToOutputDirectory="Always" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Config\AADDRESS.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Config\ASECTION.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Config\BLOCKDATA.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Config\PORTMAP.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Config\VEHICLEMAP.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="SaveConfig\Visionox_2\AADDRESS.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="SaveConfig\Visionox_2\ASECTION.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="SaveConfig\Visionox_2\BLOCKDATA.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="SaveConfig\Visionox_2\PORTMAP.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="SaveConfig\Visionox_2\SECSCMDSET.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="SaveConfig\Visionox_2\TeachingData.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="SaveConfig\Visionox_2\VEHICLEMAP.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

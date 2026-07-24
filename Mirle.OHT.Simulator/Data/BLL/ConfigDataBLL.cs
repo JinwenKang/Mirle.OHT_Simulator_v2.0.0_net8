@@ -312,20 +312,7 @@ namespace com.mirle.ibg3k0.sc.BLL
                 adrLst = addressDao.loadAddress();
                 foreach (Address adr in adrLst)
                 {
-                    if (adr.Adr_Type == 1)
-                    {
-                        Section sec = sectionDao.getSection(adr.Sec_ID);
-                        Address from = addressDao.getAddress(sec.From_Adr);
-                        Address to = addressDao.getAddress(sec.To_Adr);
-                        if (sec != null) { 
-                            if (sec == null || from == null || to == null || double.Parse(sec.Distance) == 0) continue;                            
-                            double sectionrealdis = double.Parse(sec.Distance); //實際車踩的距離
-                            double unitvector_x = Convert.ToDouble(int.Parse(to.POS_X) - int.Parse(from.POS_X)) / sectionrealdis; //單位向量x
-                            double unitvector_y = Convert.ToDouble(int.Parse(to.POS_Y) - int.Parse(from.POS_Y)) / sectionrealdis; //單位向量y
-                            adr.POS_X = (int.Parse(from.POS_X) + Convert.ToInt32(unitvector_x * double.Parse(adr.Distance))).ToString();
-                            adr.POS_Y = (int.Parse(from.POS_Y) + Convert.ToInt32(unitvector_y * double.Parse(adr.Distance))).ToString();
-                        }
-                    }
+                    ApplyControlAddressCoordinate(adr);
                 }
             }
             catch (Exception ex)
@@ -343,6 +330,7 @@ namespace com.mirle.ibg3k0.sc.BLL
             try
             {
                 rtnAdr = addressDao.getAddress(adr_id);
+                ApplyControlAddressCoordinate(rtnAdr);
             }
             catch (Exception ex)
             {
@@ -359,6 +347,10 @@ namespace com.mirle.ibg3k0.sc.BLL
             try
             {
                 adrLst = addressDao.loadParkAddressBySec(sec_id);
+                foreach (Address adr in adrLst)
+                {
+                    ApplyControlAddressCoordinate(adr);
+                }
             }
             catch (Exception ex)
             {
@@ -398,6 +390,54 @@ namespace com.mirle.ibg3k0.sc.BLL
             }
 
             return rtnSec;
+        }
+
+        private void ApplyControlAddressCoordinate(Address adr)
+        {
+            if (adr == null || adr.Adr_Type != SCAppConstants.AddressType.Control)
+            {
+                return;
+            }
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(adr.Sec_ID) || string.IsNullOrWhiteSpace(adr.Distance))
+                {
+                    return;
+                }
+
+                Section sec = sectionDao.getSection(adr.Sec_ID);
+                if (sec == null || !double.TryParse(sec.Distance, out double sectionRealDis) || sectionRealDis == 0)
+                {
+                    return;
+                }
+
+                Address from = addressDao.getAddress(sec.From_Adr);
+                Address to = addressDao.getAddress(sec.To_Adr);
+                if (from == null || to == null)
+                {
+                    return;
+                }
+
+                if (!double.TryParse(from.POS_X, out double fromX) ||
+                    !double.TryParse(from.POS_Y, out double fromY) ||
+                    !double.TryParse(to.POS_X, out double toX) ||
+                    !double.TryParse(to.POS_Y, out double toY) ||
+                    !double.TryParse(adr.Distance, out double adrDistance))
+                {
+                    return;
+                }
+
+                double unitVectorX = (toX - fromX) / sectionRealDis;
+                double unitVectorY = (toY - fromY) / sectionRealDis;
+
+                adr.POS_X = (fromX + Convert.ToInt32(unitVectorX * adrDistance)).ToString();
+                adr.POS_Y = (fromY + Convert.ToInt32(unitVectorY * adrDistance)).ToString();
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex);
+            }
         }
 
         public Section getSectionByAdress(string adr_id)

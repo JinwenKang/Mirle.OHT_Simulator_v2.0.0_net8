@@ -34,6 +34,7 @@ using Google.Protobuf;
 using System.Threading;
 using System.Threading.Tasks;
 using static com.mirle.ibg3k0.stc.Data.SecsData.Sample.S2F49_TRANSFEREXT.REPITEM.CST.CARR;
+using Google.Protobuf.Reflection;
 
 namespace Mirle.Agvc.Simulator
 {
@@ -51,11 +52,14 @@ namespace Mirle.Agvc.Simulator
         private MiddleAgent agent;
         private bool syncMapInfo = false;
         private bool teachReply = true;
+        private bool pendingSyncMapReload = false;  // 收到 ID_15/17/19 時若有 ID_31 執行中，延後送 ID_142
 
         // ===== 功能一：雙命令Queue機制 - 新增成員變數 =====
         public ID_31_TRANS_REQUEST queued31Cmd = null;        // Queue的命令
         public object cmdQueueLock = new object();              // 命令Queue鎖
         // ===== 新增結束 =====
+
+        private volatile bool isPauseRequested = false;
 
         // ===== In-Section Load Assignment =====
         /// <summary>
@@ -69,6 +73,10 @@ namespace Mirle.Agvc.Simulator
         private string lastPassedSecID = "";
         private double lastSecPassedTime = 0;
         private DateTime sectionEnterTime = DateTime.MinValue;
+        // ===== 新增結束 =====
+
+        // ===== StopSet/StopClear: 控制 ID_134 發送 =====
+        private volatile bool isCmd134ReportEnabled = true;
         // ===== 新增結束 =====
 
         string BlockID = string.Empty;
@@ -115,6 +123,7 @@ namespace Mirle.Agvc.Simulator
                 CurrentAct = SCAppConstants.CurrentAction.None;
                 recent31Cmd = transRequest;
                 WaitForOneSecond();
+                WaitIfPaused();
                 SetBasicInform(theLoggerAgent, OnCmdSend);
 
                 SetNextAction(null);
@@ -180,6 +189,22 @@ namespace Mirle.Agvc.Simulator
 
         public bool StartFeedBack41MapReload()
         {
+            // 若有命令執行中，延後到 ID_132 回報後再處理，避免中途切換 Manual 模式
+            if (recent31Cmd != null)
+            {
+                pendingSyncMapReload = true;
+                logger.Info($"Vh:[{agent.VhID()}] StartFeedBack41MapReload: ID_31 in progress (CmdID:[{recent31Cmd.CmdID}]), defer until ID_132");
+                return true;
+            }
+            return ExecuteMapReload();
+        }
+
+        /// <summary>
+        /// 同步圖資的實際執行結構：切換 Manual → 回覆 ID_142 → 切換 AutoRemote。
+        /// 呼叫端需確保命令已結束（recent31Cmd == null）再呼叫此方法。
+        /// </summary>
+        private bool ExecuteMapReload()
+        {
             try
             {
                 //沒有同步圖資
@@ -208,7 +233,6 @@ namespace Mirle.Agvc.Simulator
                     {
                         Send_Cmd142_ModeChangeComplete(false);
                     }
-
 
                     //OHT切換到AutoRemote
                     Send_Cmd136_TransferEventInitial();
@@ -493,6 +517,7 @@ namespace Mirle.Agvc.Simulator
 
         public void Send_Cmd134_TransferEventReport(object obj)
         {
+            if (!isCmd134ReportEnabled) return;
             try
             {
                 ID_134_TRANS_EVENT_REP iD_134_TRANS_EVENT_REP = new ID_134_TRANS_EVENT_REP();
@@ -526,6 +551,7 @@ namespace Mirle.Agvc.Simulator
 
         public void Send_Cmd134_TransferEventReport()
         {
+            if (!isCmd134ReportEnabled) return;
             try
             {
                 ID_134_TRANS_EVENT_REP iD_134_TRANS_EVENT_REP = new ID_134_TRANS_EVENT_REP();
@@ -571,6 +597,7 @@ namespace Mirle.Agvc.Simulator
 
         public void Send_Cmd134_TransferEventReportWithLog()
         {
+            if (!isCmd134ReportEnabled) return;
             try
             {
                 ID_134_TRANS_EVENT_REP iD_134_TRANS_EVENT_REP = new ID_134_TRANS_EVENT_REP();
@@ -598,6 +625,7 @@ namespace Mirle.Agvc.Simulator
 
         public void Send_Cmd134_TransferEventReport(string sectionAddressCount_Section)
         {
+            if (!isCmd134ReportEnabled) return;
             try
             {
                 //while (!scApp.checkVhAddress(agent.VhNo(), sectionAddressCount_Section))
@@ -630,6 +658,7 @@ namespace Mirle.Agvc.Simulator
 
         public void Send_Cmd134_TransferEventReport(int distance)
         {
+            if (!isCmd134ReportEnabled) return;
             try
             {
                 ID_134_TRANS_EVENT_REP iD_134_TRANS_EVENT_REP = new ID_134_TRANS_EVENT_REP();
@@ -925,7 +954,7 @@ namespace Mirle.Agvc.Simulator
 
             return null;
         }
-        private ID_36_TRANS_EVENT_RESPONSE Send_Cmd136_TransferEventInitial()
+        public ID_36_TRANS_EVENT_RESPONSE Send_Cmd136_TransferEventInitial()
         {
             try
             {
@@ -1127,6 +1156,11 @@ namespace Mirle.Agvc.Simulator
                         setCstBox132(iD_132_TRANS_COMPLETE_REPORT);
                     }
                 }
+                else if (operaType == EnumOperaType.Abnormal_EmptyRetrieval)
+                {
+                    iD_132_TRANS_COMPLETE_REPORT.CmpStatus = CompleteStatus.CmpStatusIdemptyRetrival;
+                    setCstBox132(iD_132_TRANS_COMPLETE_REPORT);                    
+                }
                 else
                 {
                     switch (recent31Cmd.ActType)
@@ -1268,6 +1302,61 @@ namespace Mirle.Agvc.Simulator
                 string log_msg = $"Vehicle No:[{agent.VhID()}] Send Message:[132]";
 
                 var send_result = SendCommandWrapperWithLog(wrappers, log_msg);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Stop Set 時回報 ID_132 CmpStatusVehicleAbort 異常結束。
+        /// 由 MiddleAgent.SetStopSignal() 同步呼叫，避免與下一筆命令並行造成回報交錯。
+        /// </summary>
+        public void Send_Cmd132_AbnormalEndByStopSet()
+        {
+            try
+            {
+                if (recent31Cmd == null)
+                {
+                    logger.Info($"Vh:[{agent.VhID()}] StopSet: no executing ID_31 command, skip ID_132");
+                    return;
+                }
+
+                // Stop 異常結束時，若當下車上本來已有 CST，強制保留載貨狀態避免後續 NoCommand 清空 CSTID。
+                bool hadCstBeforeAbort = !scApp.isEmpty(theVehicleInfo.CSTID) || !scApp.isEmpty(theVehicleInfo.CarCstID);
+                if (hadCstBeforeAbort)
+                {
+                    theVehicleInfo.HasCst = VhLoadCarrierStatus.Exist;
+                    if (scApp.isEmpty(theVehicleInfo.CSTID))
+                    {
+                        if (!scApp.isEmpty(theVehicleInfo.CarCstID))
+                        {
+                            theVehicleInfo.CSTID = theVehicleInfo.CarCstID;
+                        }
+                        else if (!scApp.isEmpty(recent31Cmd.CSTID))
+                        {
+                            theVehicleInfo.CSTID = recent31Cmd.CSTID;
+                            theVehicleInfo.CarCstID = recent31Cmd.CSTID;
+                        }
+                    }
+                }
+
+                logger.Info($"Vh:[{agent.VhID()}] StopSet: sending ID_132 CmpStatusVehicleAbort, CmdID:[{recent31Cmd.CmdID}]");
+                Send_Cmd132_TransferCompleteReport();
+                Thread.Sleep(500);
+                SetVehicleStatus(VHActionStatus.NoCommand);
+                recent31Cmd = null;
+                Send_Cmd144_StatusChangeReport();
+
+                // 若有等待中的同步圖資，回報失敗
+                if (pendingSyncMapReload)
+                {
+                    pendingSyncMapReload = false;
+                    logger.Info($"Vh:[{agent.VhID()}] StopSet: pendingSyncMapReload → Send_Cmd142 false");
+                    Send_Cmd142_ModeChangeComplete(false);
+                    syncMapInfo = false;
+                }
             }
             catch (Exception ex)
             {
@@ -2307,11 +2396,11 @@ namespace Mirle.Agvc.Simulator
         {
             Send_Cmd132_TransferCompleteReport(cMDCancelType);
             //SpinWait.SpinUntil(() => false, 500);
-            Thread.Sleep(500);
+            PauseAwareSleep(500);
             SetVehicleStatus(VHActionStatus.NoCommand);
             Send_Cmd144_StatusChangeReport();
-            
-            // ===== 功能一：檢查是否有Queue命令 =====
+
+            // ===== 功能一：先在 lock 內清除 recent31Cmd，確保後續 ExecuteMapReload 看到 null =====
             bool hasQueuedCmd = false;
             lock (cmdQueueLock)
             {
@@ -2321,25 +2410,45 @@ namespace Mirle.Agvc.Simulator
                 if (queued31Cmd != null)
                 {
                     logger.Info($"Vh:[{agent.VhID()}] Start executing queued command, CmdID:[{queued31Cmd.CmdID}]");
-                    
+
                     // 將Queue命令移到執行命令（lock內只做狀態切換，不執行命令）
                     recent31Cmd = queued31Cmd;
                     queued31Cmd = null;
-                    
+
                     // 重置狀態
                     cmdCanceltype = CMDCancelType.CmdNone;
                     CurrentAct = SCAppConstants.CurrentAction.None;
                     hasQueuedCmd = true;
                 }
             }
+            // ===== 新增結束 =====
+
+            // ===== 同步圖資延後回報：recent31Cmd 已清除後再處理，ExecuteMapReload 不會再被 defer =====
+            if (pendingSyncMapReload)
+            {
+                pendingSyncMapReload = false;
+                if (cMDCancelType == CMDCancelType.CmdNone)
+                {
+                    logger.Info($"Vh:[{agent.VhID()}] Normal complete, execute deferred MapReload → ID_142");
+                    ExecuteMapReload();
+                }
+                else
+                {
+                    logger.Info($"Vh:[{agent.VhID()}] Abnormal/Cancel/Abort complete (cancelType:[{cMDCancelType}]), MapReload → ID_142 false");
+                    Send_Cmd142_ModeChangeComplete(false);
+                    syncMapInfo = false;
+                }
+            }
+            // ===== 新增結束 =====
+
             // lock 外再啟動命令，避免持鎖期間新 ID_31 無法回覆 ID_131
             if (hasQueuedCmd)
             {
-                Thread.Sleep(500);
+                PauseAwareSleep(500);
+                WaitIfPaused();
                 SetBasicInform(theLoggerAgent, OnCmdSend);
                 SetNextAction(null);
             }
-            // ===== 新增結束 =====
         }
 
         private bool AskGuideData(AskGuideData data)
@@ -2553,6 +2662,7 @@ namespace Mirle.Agvc.Simulator
                 RouteChangeData data = null;
 
                 if (isCancelAbort()) return;  //收到Cancel或Abort，結束命令
+                WaitIfPaused();
 
                 if (!scApp.getIsJumpToTarget())
                 {
@@ -2572,6 +2682,7 @@ namespace Mirle.Agvc.Simulator
                             for (vir_adr_index = 0; vir_adr_index < virAdrLst.Count;)
                             {
                                 if (isCancelAbort()) return;  //收到Cancel或Abort，結束命令
+                                WaitIfPaused();
 
                                 if (virAdrLst[vir_adr_index].Distance < theVehicleInfo.SecDistance)
                                 {
@@ -2611,7 +2722,7 @@ namespace Mirle.Agvc.Simulator
                                 checkDisIs25();
 
                                 //SpinWait.SpinUntil(() => false, SystemParameter.MoveStepTime);
-                                Thread.Sleep(SystemParameter.MoveStepTime);
+                                PauseAwareSleep(SystemParameter.MoveStepTime);
 
                                 vir_adr_index++;
                             }
@@ -2621,6 +2732,7 @@ namespace Mirle.Agvc.Simulator
                         for (sectionAddressCount = 0; sectionAddressCount < guideData.GuideSection.Count;)
                         {
                             if (isCancelAbort()) return;  //收到Cancel或Abort，結束命令
+                            WaitIfPaused();
 
                             if(is_routeChange && data != null)
                             {
@@ -2672,7 +2784,7 @@ namespace Mirle.Agvc.Simulator
                             {
                                 ID_36_TRANS_EVENT_RESPONSE recent36Response = Send_Cmd136_TransferEventBlockReserveReport(EventType.BlockReq, blockData.Block_ID);
                                 //SpinWait.SpinUntil(() => false, SystemParameter.MoveStepTime);
-                                Thread.Sleep(SystemParameter.MoveStepTime);
+                                PauseAwareSleep(SystemParameter.MoveStepTime);
                                 if (recent36Response != null)
                                 {
                                     if (IsChangeRoute(recent36Response))
@@ -2748,7 +2860,7 @@ namespace Mirle.Agvc.Simulator
                             }
 
                             //SpinWait.SpinUntil(() => false, SystemParameter.Report136Time);
-                            Thread.Sleep(SystemParameter.Report136Time);
+                            PauseAwareSleep(SystemParameter.Report136Time);
 
                             if (is_pass)
                             {
@@ -2766,13 +2878,14 @@ namespace Mirle.Agvc.Simulator
                                 for (vir_adr_index = 0; vir_adr_index < virAdrLst.Count;)
                                 {
                                     if (isCancelAbort()) return;  //收到Cancel或Abort，結束命令
+                                    WaitIfPaused();
 
                                     if (!scApp.getDisableLocCheck() && !scApp.checkVhAddress(agent.VhID(), theVehicleInfo.SecDistance, virAdrLst[vir_adr_index], guideData.GuideSection, "Guide"))
                                     {
                                         Send_Cmd144_StatusChangeReport(true, true);
                                         pv_obstecle = true;
                                         //SpinWait.SpinUntil(() => false, 2000);
-                                        Thread.Sleep(2000);
+                                        PauseAwareSleep(2000);
                                         continue;
                                     }
 
@@ -2796,7 +2909,7 @@ namespace Mirle.Agvc.Simulator
                                     }
 
                                     //SpinWait.SpinUntil(() => false, SystemParameter.MoveStepTime);
-                                    Thread.Sleep(SystemParameter.MoveStepTime);
+                                    PauseAwareSleep(SystemParameter.MoveStepTime);
                                     vir_adr_index++;
 
                                     if (!scApp.isEmpty(BlockID) && !virAdrLst[vir_adr_index].Is_Virtual)
@@ -2808,7 +2921,7 @@ namespace Mirle.Agvc.Simulator
                                             Task.Run(() =>
                                             {
                                                 //SpinWait.SpinUntil(() => false, 5000);
-                                                Thread.Sleep(5000);
+                                                PauseAwareSleep(5000);
                                                 Send_Cmd136_TransferEventReleaseBlockReport(EventType.BlockRelease, virAdrLst[vir_adr_index].Loc_ID);
                                             });
                                         }
@@ -2825,6 +2938,15 @@ namespace Mirle.Agvc.Simulator
                                 }
                                 logger_roadcontrol.Info($"Vh:[{agent.VhID()}] Section complete: [{section}], elapsed: {lastSecPassedTime} ms");
                                 // ===== 結束 =====
+
+                                // 最後一段 section 也要能觸發 Move->Load/Move 改路，避免沒有下一輪 for 而漏掉 RouteChange。
+                                if (is_routeChange && data != null)
+                                {
+                                    logger_roadcontrol.Info($"Vh:[{agent.VhID()}] RouteChange apply after section complete. " +
+                                                            $"ActType:[{data.ActType}] Target:[{data.TargetPort}]");
+                                    RouteChange(data);
+                                    return;
+                                }
                             }
                             else
                             {
@@ -2839,6 +2961,7 @@ namespace Mirle.Agvc.Simulator
                         while (true)
                         {
                             if (isCancelAbort()) return;  //收到Cancel或Abort，結束命令
+                            WaitIfPaused();
 
                             string[] reserveSections = { guideData.TargetSec.ID };
                             DriveDirction[] reserveDirection = { DriveDirction.DriveDirForward };
@@ -2880,7 +3003,7 @@ namespace Mirle.Agvc.Simulator
                             }
 
                             //SpinWait.SpinUntil(() => false, SystemParameter.Report136Time);
-                            Thread.Sleep(SystemParameter.Report136Time);
+                            PauseAwareSleep(SystemParameter.Report136Time);
                         }
 
                         if (!guideData.IsOneSection)
@@ -2901,6 +3024,7 @@ namespace Mirle.Agvc.Simulator
                         for (vir_adr_index = 0; vir_adr_index < virAdrLst.Count;)
                         {
                             if (isCancelAbort()) return;  //收到Cancel或Abort，結束命令
+                            WaitIfPaused();
 
                             if (virAdrLst[vir_adr_index].Distance < theVehicleInfo.SecDistance)
                             {
@@ -2933,7 +3057,7 @@ namespace Mirle.Agvc.Simulator
                                 Send_Cmd144_StatusChangeReport(true, true);
                                 pv_obstecle = true;
                                 //SpinWait.SpinUntil(() => false, 2000);
-                                Thread.Sleep(2000);
+                                PauseAwareSleep(2000);
                                 continue;
                             }
 
@@ -2970,7 +3094,7 @@ namespace Mirle.Agvc.Simulator
                                 }
 
                                 //SpinWait.SpinUntil(() => false, SystemParameter.MoveStepTime);
-                                Thread.Sleep(SystemParameter.MoveStepTime);
+                                PauseAwareSleep(SystemParameter.MoveStepTime);
 
                                 break;
                             }
@@ -3002,10 +3126,11 @@ namespace Mirle.Agvc.Simulator
                     }
 
                     //SpinWait.SpinUntil(() => false, SystemParameter.MoveStepTime);
-                    Thread.Sleep(SystemParameter.MoveStepTime);
+                    PauseAwareSleep(SystemParameter.MoveStepTime);
                 }
                 else
                 {
+                    WaitIfPaused();
                     if (guideData.TargetPort == null || guideData.TargetPort.Equals(string.Empty))
                     {
                         theVehicleInfo.CurrentSecID = guideData.TargetSec.ID;
@@ -3040,7 +3165,7 @@ namespace Mirle.Agvc.Simulator
 
                     Send_Cmd144_StatusChangeReport(false, true);
                     //SpinWait.SpinUntil(() => false, SystemParameter.MoveStepTime);
-                    Thread.Sleep(SystemParameter.MoveStepTime);
+                    PauseAwareSleep(SystemParameter.MoveStepTime);
                 }
             }
             catch (Exception ex)
@@ -3379,10 +3504,41 @@ namespace Mirle.Agvc.Simulator
             }
         }
 
-        private static void WaitForOneSecond()
+        private void WaitForOneSecond()
         {
             //SpinWait.SpinUntil(() => false, 1000);
-            Thread.Sleep(1000);
+            PauseAwareSleep(1000);
+        }
+
+        public bool IsPauseActive()
+        {
+            return isPauseRequested;
+        }
+
+        private void WaitIfPaused()
+        {
+            while (isPauseRequested)
+            {
+                if (theVehicleInfo != null)
+                {
+                    theVehicleInfo.Speed = 0;
+                }
+                Thread.Sleep(100);
+            }
+        }
+
+        private void PauseAwareSleep(int milliseconds)
+        {
+            int remaining = milliseconds;
+            const int sleepSlice = 100;
+
+            while (remaining > 0)
+            {
+                WaitIfPaused();
+                int currentSleep = Math.Min(sleepSlice, remaining);
+                Thread.Sleep(currentSleep);
+                remaining -= currentSleep;
+            }
         }
 
         private void SetBasicInform(LoggerAgent theLoggerAgent, EventHandler<string> OnCmdSend)
@@ -3413,6 +3569,12 @@ namespace Mirle.Agvc.Simulator
         public double getSecAngle(string sec_id)
         {
             double angle = 0;
+
+            if (scApp?.ConfigDataBLL == null)
+            {
+                logger.Warn($"Vh:[{agent.VhID()}] getSecAngle: ConfigDataBLL not ready, sec_id=[{sec_id}], return 0");
+                return 0;
+            }
 
             Section sec = scApp.ConfigDataBLL.getSection(sec_id);
             if (sec != null)
@@ -3514,10 +3676,13 @@ namespace Mirle.Agvc.Simulator
         {
             if(receive.EventType == PauseEvent.Pause)
             {
+                isPauseRequested = true;
                 theVehicleInfo.PauseStatus = VhStopSingle.StopSingleOn;
+                theVehicleInfo.Speed = 0;
             }
             else
             {
+                isPauseRequested = false;
                 theVehicleInfo.PauseStatus = VhStopSingle.StopSingleOff;
             }
 
@@ -3593,6 +3758,26 @@ namespace Mirle.Agvc.Simulator
         public void setSyncMapInfo()
         {
             syncMapInfo = true;
+            if (recent31Cmd != null)
+            {
+                pendingSyncMapReload = true;
+                logger.Info($"Vh:[{agent.VhID()}] ID_15/17/19 received while ID_31 in progress (CmdID:[{recent31Cmd.CmdID}]), defer ID_142 until ID_132");
+            }
+        }
+
+        /// <summary>
+        /// 控制 ID_134 定期/事件回報是否發送。
+        /// StopSet 期間關閉；StopClear 後開啟並可選擇立即補送一次當前車況。
+        /// </summary>
+        public void SetCmd134ReportEnabled(bool enabled, bool sendOnceIfEnabled = false)
+        {
+            isCmd134ReportEnabled = enabled;
+            logger.Info($"Vh:[{agent.VhID()}] ID_134 report switch => {(enabled ? "ON" : "OFF")}");
+
+            if (enabled && sendOnceIfEnabled)
+            {
+                Send_Cmd134_TransferEventReport();
+            }
         }
 
         // ===== 功能一：雙命令Queue機制 - 新增公開方法 =====

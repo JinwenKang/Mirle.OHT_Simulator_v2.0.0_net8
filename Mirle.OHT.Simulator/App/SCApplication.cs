@@ -92,7 +92,7 @@ namespace com.mirle.ibg3k0.sc.App
         private SCApplication()
         {
             init();
-            initMCSManager();
+            //initMCSManager();
         }
 
         public static SCApplication getInstance()
@@ -251,10 +251,12 @@ namespace com.mirle.ibg3k0.sc.App
 
                     DataRow dr = dt.NewRow();
 
-                    for (int i = 0; i < cs; i++)
+                    // 以 dt.Columns.Count 為上限，避免 CSV 資料列尾端多餘欄位
+                    // 造成 IndexOutOfRangeException（例如 PORTMAP.csv 某些列有 8 欄但標頭只有 7 欄）
+                    int writeCols = Math.Min(cs, dt.Columns.Count);
+                    for (int i = 0; i < writeCols; i++)
                     {
                         string val = parser[i];
-
                         dr[i] = val;
                     }
                     dt.Rows.Add(dr);
@@ -676,7 +678,7 @@ namespace com.mirle.ibg3k0.sc.App
             virAdrTo.Seq_No = seq;
             virAdrTo.POS_X = to.POS_X;
             virAdrTo.POS_Y = to.POS_Y;
-            virAdrTo.Distance = 0;
+            virAdrTo.Distance = int.Parse(sec.Distance); // TO address 距離應為 section 總長，而非 0
 
             virAdrLst.Add(virAdrFrom);
             virAdrLst.Add(virAdr);
@@ -1027,6 +1029,12 @@ namespace com.mirle.ibg3k0.sc.App
             {
                 Address from = adrLst.FirstOrDefault(a => a.Adr_ID.Trim() == sec.From_Adr.Trim());
                 Address to = adrLst.FirstOrDefault(a => a.Adr_ID.Trim() == sec.To_Adr.Trim());
+
+                if (from == null || to == null)
+                {
+                    logger.Warn($"setVirtualAddress: Section [{sec.ID}] From=[{sec.From_Adr}] To=[{sec.To_Adr}] — address not found in AADDRESS, skip.");
+                    continue;
+                }
 
                 int distance = int.Parse(sec.Distance);
                 bool is_x_straight;

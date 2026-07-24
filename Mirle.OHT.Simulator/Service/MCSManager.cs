@@ -47,6 +47,25 @@ namespace OverhaedHoistTransporter_Simulator.VO
         }
         public bool isConnection { get { return agent.IsSelected; } }
 
+        /// <summary>
+        /// 停止 MCSManager 連接
+        /// </summary>
+        public void Stop()
+        {
+            try
+            {
+                if (agent != null)
+                {
+                    agent.stop();
+                }
+            }
+            catch (Exception ex)
+            {
+                // 記錄異常但不拋出，避免影響整體流程
+                System.Console.WriteLine($"停止 MCSManager 時發生異常: {ex.Message}");
+            }
+        }
+
         object tranCmdSync = new object();
         public void sendTranCmd(string source_port, string destn_port)
         {
