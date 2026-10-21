@@ -72,6 +72,10 @@ namespace Mirle.Agvc.Simulator
             textBox3 = new System.Windows.Forms.TextBox();
             label10 = new System.Windows.Forms.Label();
             label11 = new System.Windows.Forms.Label();
+            lblInitPosX = new System.Windows.Forms.Label();
+            txtInitPosX = new System.Windows.Forms.TextBox();
+            lblInitPosY = new System.Windows.Forms.Label();
+            txtInitPosY = new System.Windows.Forms.TextBox();
             textBox4 = new System.Windows.Forms.TextBox();
             textBox5 = new System.Windows.Forms.TextBox();
             label12 = new System.Windows.Forms.Label();
@@ -133,6 +137,7 @@ namespace Mirle.Agvc.Simulator
             rb_teachOk = new System.Windows.Forms.RadioButton();
             chbInSectionLoad = new System.Windows.Forms.CheckBox();
             grpConnection = new System.Windows.Forms.GroupBox();
+            Send_136_Initial = new System.Windows.Forms.Button();
             grpInitPos = new System.Windows.Forms.GroupBox();
             grpContinuousSend = new System.Windows.Forms.GroupBox();
             grpSimOptions = new System.Windows.Forms.GroupBox();
@@ -146,7 +151,6 @@ namespace Mirle.Agvc.Simulator
             grpTeaching = new System.Windows.Forms.GroupBox();
             grpMismatchID = new System.Windows.Forms.GroupBox();
             grpDelay = new System.Windows.Forms.GroupBox();
-            Send_136_Initial = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)dgvOht).BeginInit();
             statusStrip1.SuspendLayout();
             groupBox2.SuspendLayout();
@@ -218,7 +222,7 @@ namespace Mirle.Agvc.Simulator
             // 
             statusStrip1.ImageScalingSize = new System.Drawing.Size(20, 20);
             statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { toolStripStatusLabel1, toolStripStatusLabel2, toolStripStatusLabel3 });
-            statusStrip1.Location = new System.Drawing.Point(0, 839);
+            statusStrip1.Location = new System.Drawing.Point(0, 775);
             statusStrip1.Name = "statusStrip1";
             statusStrip1.Padding = new System.Windows.Forms.Padding(1, 0, 16, 0);
             statusStrip1.Size = new System.Drawing.Size(1155, 24);
@@ -279,7 +283,7 @@ namespace Mirle.Agvc.Simulator
             // btnConnect
             // 
             btnConnect.Font = new System.Drawing.Font("微軟正黑體", 10F);
-            btnConnect.Location = new System.Drawing.Point(665, 20);
+            btnConnect.Location = new System.Drawing.Point(438, 61);
             btnConnect.Margin = new System.Windows.Forms.Padding(4);
             btnConnect.Name = "btnConnect";
             btnConnect.Size = new System.Drawing.Size(93, 33);
@@ -291,7 +295,7 @@ namespace Mirle.Agvc.Simulator
             // btnDisConnect
             // 
             btnDisConnect.Font = new System.Drawing.Font("微軟正黑體", 10F);
-            btnDisConnect.Location = new System.Drawing.Point(665, 60);
+            btnDisConnect.Location = new System.Drawing.Point(539, 61);
             btnDisConnect.Margin = new System.Windows.Forms.Padding(4);
             btnDisConnect.Name = "btnDisConnect";
             btnDisConnect.Size = new System.Drawing.Size(93, 33);
@@ -601,7 +605,6 @@ namespace Mirle.Agvc.Simulator
             // 
             tbx_init_add_id.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
             tbx_init_add_id.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
-            tbx_init_add_id.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDown;
             tbx_init_add_id.Font = new System.Drawing.Font("微軟正黑體", 10F);
             tbx_init_add_id.FormattingEnabled = true;
             tbx_init_add_id.Location = new System.Drawing.Point(117, 14);
@@ -609,8 +612,8 @@ namespace Mirle.Agvc.Simulator
             tbx_init_add_id.Name = "tbx_init_add_id";
             tbx_init_add_id.Size = new System.Drawing.Size(93, 25);
             tbx_init_add_id.TabIndex = 47;
-            tbx_init_add_id.TextChanged += tbx_init_add_id_TextChanged;
             tbx_init_add_id.SelectedIndexChanged += tbx_init_add_id_SelectedIndexChanged;
+            tbx_init_add_id.TextChanged += tbx_init_add_id_TextChanged;
             // 
             // label9
             // 
@@ -626,7 +629,6 @@ namespace Mirle.Agvc.Simulator
             // 
             tbx_init_sec_id.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
             tbx_init_sec_id.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
-            tbx_init_sec_id.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDown;
             tbx_init_sec_id.Font = new System.Drawing.Font("微軟正黑體", 10F);
             tbx_init_sec_id.FormattingEnabled = true;
             tbx_init_sec_id.Location = new System.Drawing.Point(117, 51);
@@ -665,6 +667,50 @@ namespace Mirle.Agvc.Simulator
             label11.Size = new System.Drawing.Size(72, 18);
             label11.TabIndex = 48;
             label11.Text = "Init_SecId";
+            // 
+            // lblInitPosX
+            // 
+            lblInitPosX.AutoSize = true;
+            lblInitPosX.Font = new System.Drawing.Font("微軟正黑體", 10F);
+            lblInitPosX.Location = new System.Drawing.Point(9, 89);
+            lblInitPosX.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            lblInitPosX.Name = "lblInitPosX";
+            lblInitPosX.Size = new System.Drawing.Size(45, 18);
+            lblInitPosX.TabIndex = 49;
+            lblInitPosX.Text = "Init_X";
+            // 
+            // txtInitPosX
+            // 
+            txtInitPosX.Font = new System.Drawing.Font("微軟正黑體", 10F);
+            txtInitPosX.Location = new System.Drawing.Point(117, 86);
+            txtInitPosX.Margin = new System.Windows.Forms.Padding(4);
+            txtInitPosX.Name = "txtInitPosX";
+            txtInitPosX.Size = new System.Drawing.Size(93, 25);
+            txtInitPosX.TabIndex = 47;
+            txtInitPosX.Text = "0";
+            txtInitPosX.TextChanged += txtInitPosXY_TextChanged;
+            // 
+            // lblInitPosY
+            // 
+            lblInitPosY.AutoSize = true;
+            lblInitPosY.Font = new System.Drawing.Font("微軟正黑體", 10F);
+            lblInitPosY.Location = new System.Drawing.Point(9, 126);
+            lblInitPosY.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            lblInitPosY.Name = "lblInitPosY";
+            lblInitPosY.Size = new System.Drawing.Size(44, 18);
+            lblInitPosY.TabIndex = 49;
+            lblInitPosY.Text = "Init_Y";
+            // 
+            // txtInitPosY
+            // 
+            txtInitPosY.Font = new System.Drawing.Font("微軟正黑體", 10F);
+            txtInitPosY.Location = new System.Drawing.Point(117, 123);
+            txtInitPosY.Margin = new System.Windows.Forms.Padding(4);
+            txtInitPosY.Name = "txtInitPosY";
+            txtInitPosY.Size = new System.Drawing.Size(93, 25);
+            txtInitPosY.TabIndex = 47;
+            txtInitPosY.Text = "0";
+            txtInitPosY.TextChanged += txtInitPosXY_TextChanged;
             // 
             // textBox4
             // 
@@ -890,10 +936,10 @@ namespace Mirle.Agvc.Simulator
             // button1
             // 
             button1.Font = new System.Drawing.Font("微軟正黑體", 9F);
-            button1.Location = new System.Drawing.Point(776, 20);
+            button1.Location = new System.Drawing.Point(647, 18);
             button1.Margin = new System.Windows.Forms.Padding(4);
             button1.Name = "button1";
-            button1.Size = new System.Drawing.Size(122, 74);
+            button1.Size = new System.Drawing.Size(107, 74);
             button1.TabIndex = 67;
             button1.Text = "Auto Connect\r\nAll OHT";
             button1.UseVisualStyleBackColor = true;
@@ -1338,7 +1384,6 @@ namespace Mirle.Agvc.Simulator
             grpConnection.Controls.Add(label6);
             grpConnection.Controls.Add(txtPort);
             grpConnection.Controls.Add(label14);
-            grpConnection.Controls.Add(grpInitPos);
             grpConnection.Controls.Add(txtLocalIP);
             grpConnection.Controls.Add(label4);
             grpConnection.Controls.Add(txtLocalPort);
@@ -1352,10 +1397,22 @@ namespace Mirle.Agvc.Simulator
             grpConnection.Margin = new System.Windows.Forms.Padding(4);
             grpConnection.Name = "grpConnection";
             grpConnection.Padding = new System.Windows.Forms.Padding(4);
-            grpConnection.Size = new System.Drawing.Size(1132, 107);
+            grpConnection.Size = new System.Drawing.Size(861, 107);
             grpConnection.TabIndex = 200;
             grpConnection.TabStop = false;
             grpConnection.Text = "Connection Settings";
+            // 
+            // Send_136_Initial
+            // 
+            Send_136_Initial.Font = new System.Drawing.Font("微軟正黑體", 10F);
+            Send_136_Initial.Location = new System.Drawing.Point(762, 19);
+            Send_136_Initial.Margin = new System.Windows.Forms.Padding(4);
+            Send_136_Initial.Name = "Send_136_Initial";
+            Send_136_Initial.Size = new System.Drawing.Size(84, 33);
+            Send_136_Initial.TabIndex = 204;
+            Send_136_Initial.Text = "Initial";
+            Send_136_Initial.UseVisualStyleBackColor = true;
+            Send_136_Initial.Click += Send_136_Initial_Click;
             // 
             // grpInitPos
             // 
@@ -1363,12 +1420,16 @@ namespace Mirle.Agvc.Simulator
             grpInitPos.Controls.Add(tbx_init_add_id);
             grpInitPos.Controls.Add(label11);
             grpInitPos.Controls.Add(tbx_init_sec_id);
+            grpInitPos.Controls.Add(lblInitPosX);
+            grpInitPos.Controls.Add(txtInitPosX);
+            grpInitPos.Controls.Add(lblInitPosY);
+            grpInitPos.Controls.Add(txtInitPosY);
             grpInitPos.Font = new System.Drawing.Font("微軟正黑體", 9F, System.Drawing.FontStyle.Bold);
-            grpInitPos.Location = new System.Drawing.Point(910, 14);
+            grpInitPos.Location = new System.Drawing.Point(883, 6);
             grpInitPos.Margin = new System.Windows.Forms.Padding(4);
             grpInitPos.Name = "grpInitPos";
             grpInitPos.Padding = new System.Windows.Forms.Padding(4);
-            grpInitPos.Size = new System.Drawing.Size(222, 84);
+            grpInitPos.Size = new System.Drawing.Size(263, 164);
             grpInitPos.TabIndex = 203;
             grpInitPos.TabStop = false;
             grpInitPos.Text = "Init Position";
@@ -1397,7 +1458,7 @@ namespace Mirle.Agvc.Simulator
             grpSimOptions.Controls.Add(btnDisableLocCheck);
             grpSimOptions.Controls.Add(chbInSectionLoad);
             grpSimOptions.Font = new System.Drawing.Font("微軟正黑體", 9F, System.Drawing.FontStyle.Bold);
-            grpSimOptions.Location = new System.Drawing.Point(883, 119);
+            grpSimOptions.Location = new System.Drawing.Point(883, 234);
             grpSimOptions.Margin = new System.Windows.Forms.Padding(4);
             grpSimOptions.Name = "grpSimOptions";
             grpSimOptions.Padding = new System.Windows.Forms.Padding(4);
@@ -1509,7 +1570,7 @@ namespace Mirle.Agvc.Simulator
             grpThread.Controls.Add(txtIOThread);
             grpThread.Controls.Add(btThreadStart);
             grpThread.Font = new System.Drawing.Font("微軟正黑體", 9F, System.Drawing.FontStyle.Bold);
-            grpThread.Location = new System.Drawing.Point(883, 467);
+            grpThread.Location = new System.Drawing.Point(883, 568);
             grpThread.Margin = new System.Windows.Forms.Padding(4);
             grpThread.Name = "grpThread";
             grpThread.Padding = new System.Windows.Forms.Padding(4);
@@ -1523,7 +1584,7 @@ namespace Mirle.Agvc.Simulator
             grpTeaching.Controls.Add(bt_sendTeachData);
             grpTeaching.Controls.Add(groupBox1);
             grpTeaching.Font = new System.Drawing.Font("微軟正黑體", 9F, System.Drawing.FontStyle.Bold);
-            grpTeaching.Location = new System.Drawing.Point(883, 275);
+            grpTeaching.Location = new System.Drawing.Point(883, 380);
             grpTeaching.Margin = new System.Windows.Forms.Padding(4);
             grpTeaching.Name = "grpTeaching";
             grpTeaching.Padding = new System.Windows.Forms.Padding(4);
@@ -1537,7 +1598,7 @@ namespace Mirle.Agvc.Simulator
             grpMismatchID.Controls.Add(Mismatch_ID);
             grpMismatchID.Controls.Add(set_button);
             grpMismatchID.Font = new System.Drawing.Font("微軟正黑體", 9F, System.Drawing.FontStyle.Bold);
-            grpMismatchID.Location = new System.Drawing.Point(883, 389);
+            grpMismatchID.Location = new System.Drawing.Point(883, 486);
             grpMismatchID.Margin = new System.Windows.Forms.Padding(4);
             grpMismatchID.Name = "grpMismatchID";
             grpMismatchID.Padding = new System.Windows.Forms.Padding(4);
@@ -1561,23 +1622,11 @@ namespace Mirle.Agvc.Simulator
             grpDelay.TabStop = false;
             grpDelay.Text = "Reply OHTC Delay";
             // 
-            // Send_136_Initial
-            // 
-            Send_136_Initial.Font = new System.Drawing.Font("微軟正黑體", 10F);
-            Send_136_Initial.Location = new System.Drawing.Point(525, 63);
-            Send_136_Initial.Margin = new System.Windows.Forms.Padding(4);
-            Send_136_Initial.Name = "Send_136_Initial";
-            Send_136_Initial.Size = new System.Drawing.Size(116, 33);
-            Send_136_Initial.TabIndex = 204;
-            Send_136_Initial.Text = "Initial";
-            Send_136_Initial.UseVisualStyleBackColor = true;
-            Send_136_Initial.Click += Send_136_Initial_Click;
-            // 
             // Form1
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 16F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            ClientSize = new System.Drawing.Size(1155, 863);
+            ClientSize = new System.Drawing.Size(1155, 799);
             Controls.Add(grpConnection);
             Controls.Add(dgvOht);
             Controls.Add(groupBox2);
@@ -1606,6 +1655,7 @@ namespace Mirle.Agvc.Simulator
             Controls.Add(textBox4);
             Controls.Add(textBox5);
             Controls.Add(statusStrip1);
+            Controls.Add(grpInitPos);
             Font = new System.Drawing.Font("微軟正黑體", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, 136);
             Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
             Margin = new System.Windows.Forms.Padding(4);
@@ -1678,6 +1728,10 @@ namespace Mirle.Agvc.Simulator
         private System.Windows.Forms.ComboBox tbx_init_add_id;
         private System.Windows.Forms.Label label9;
         private System.Windows.Forms.ComboBox tbx_init_sec_id;
+        private System.Windows.Forms.Label lblInitPosX;
+        private System.Windows.Forms.TextBox txtInitPosX;
+        private System.Windows.Forms.Label lblInitPosY;
+        private System.Windows.Forms.TextBox txtInitPosY;
         private System.Windows.Forms.TextBox textBox3;
         private System.Windows.Forms.Label label10;
         private System.Windows.Forms.Label label11;

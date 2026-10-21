@@ -52,11 +52,6 @@ namespace Mirle.Agvc.Simulator
         public EnumAddress TempAddr { get; set; } = EnumAddress.A;
         public Random random = new Random();
 
-        private TextBox txtInitPosX;
-        private TextBox txtInitPosY;
-        private Label lblInitPosX;
-        private Label lblInitPosY;
-
         private NLog.Logger logger = LogManager.GetCurrentClassLogger();
 
         public bool IsInSitu { get; set; } = false;
@@ -79,61 +74,16 @@ namespace Mirle.Agvc.Simulator
 
         private void EnsureInitPositionManualControls()
         {
-            if (txtInitPosX != null && txtInitPosY != null)
+            if (txtInitPosX == null || txtInitPosY == null)
+            {
                 return;
+            }
 
-            lblInitPosX = new Label
-            {
-                AutoSize = true,
-                Font = new Font("微軟正黑體", 10F),
-                Location = new Point(9, 89),
-                Margin = new Padding(4, 0, 4, 0),
-                Name = "lblInitPosX",
-                Size = new Size(46, 18),
-                TabIndex = 49,
-                Text = "Init_X"
-            };
+            if (string.IsNullOrWhiteSpace(txtInitPosX.Text))
+                txtInitPosX.Text = "0";
 
-            txtInitPosX = new TextBox
-            {
-                Font = new Font("微軟正黑體", 10F),
-                Location = new Point(117, 86),
-                Margin = new Padding(4),
-                Name = "txtInitPosX",
-                Size = new Size(93, 25),
-                TabIndex = 47,
-                Text = "0"
-            };
-            txtInitPosX.TextChanged += txtInitPosXY_TextChanged;
-
-            lblInitPosY = new Label
-            {
-                AutoSize = true,
-                Font = new Font("微軟正黑體", 10F),
-                Location = new Point(9, 126),
-                Margin = new Padding(4, 0, 4, 0),
-                Name = "lblInitPosY",
-                Size = new Size(46, 18),
-                TabIndex = 49,
-                Text = "Init_Y"
-            };
-
-            txtInitPosY = new TextBox
-            {
-                Font = new Font("微軟正黑體", 10F),
-                Location = new Point(117, 123),
-                Margin = new Padding(4),
-                Name = "txtInitPosY",
-                Size = new Size(93, 25),
-                TabIndex = 47,
-                Text = "0"
-            };
-            txtInitPosY.TextChanged += txtInitPosXY_TextChanged;
-
-            grpInitPos.Controls.Add(lblInitPosX);
-            grpInitPos.Controls.Add(txtInitPosX);
-            grpInitPos.Controls.Add(lblInitPosY);
-            grpInitPos.Controls.Add(txtInitPosY);
+            if (string.IsNullOrWhiteSpace(txtInitPosY.Text))
+                txtInitPosY.Text = "0";
         }
 
         private bool TryParseInitPosition(out double x, out double y)
