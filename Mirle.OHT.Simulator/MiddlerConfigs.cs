@@ -39,6 +39,8 @@ namespace Mirle.Agvc.Simulator
         
         public string CurrentAdrID { get; set; }
         public string CurrentSecID { get; set; }
+        public double CurrentX { get; set; }
+        public double CurrentY { get; set; }
 
         // ===== In-Section Load Assignment =====
         /// <summary>

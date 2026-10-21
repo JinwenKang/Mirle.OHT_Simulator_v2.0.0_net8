@@ -1,4 +1,4 @@
-﻿//*********************************************************************************
+//*********************************************************************************
 //      MiddleAgent.cs
 //*********************************************************************************
 // File Name: MiddleAgent.cs
@@ -105,6 +105,12 @@ namespace Mirle.Agvc.Simulator
                 operaObject.theVehicleInfo.CurrentAdrID = middlerConfigs.CurrentAdrID;
                 operaObject.theVehicleInfo.CurrentSecID = middlerConfigs.CurrentSecID;
 
+                if (middlerConfigs.CurrentX != 0 || middlerConfigs.CurrentY != 0 || !string.IsNullOrWhiteSpace(middlerConfigs.CurrentAdrID))
+                {
+                    operaObject.theVehicleInfo.XAxis = middlerConfigs.CurrentX;
+                    operaObject.theVehicleInfo.YAxis = middlerConfigs.CurrentY;
+                }
+
                 // ===== In-Section Load Assignment =====
                 operaObject.InSectionLoadEnabled = middlerConfigs.InSectionLoadAssignment;
                 logger.Info($"Vh:[{middlerConfigs.VhID}] [InSectionLoad] Init mode: {(middlerConfigs.InSectionLoadAssignment ? "ON" : "OFF")}");
@@ -121,8 +127,11 @@ namespace Mirle.Agvc.Simulator
                 Address adr = scApp.getAdrByID(middlerConfigs.CurrentAdrID);
                 if (adr != null)
                 {
-                    operaObject.theVehicleInfo.XAxis = double.Parse(adr.POS_X);
-                    operaObject.theVehicleInfo.YAxis = double.Parse(adr.POS_Y);
+                    if (middlerConfigs.CurrentX == 0 && middlerConfigs.CurrentY == 0)
+                    {
+                        operaObject.theVehicleInfo.XAxis = double.Parse(adr.POS_X);
+                        operaObject.theVehicleInfo.YAxis = double.Parse(adr.POS_Y);
+                    }
                 }
 
                 initialClient();
@@ -245,11 +254,15 @@ namespace Mirle.Agvc.Simulator
                 vehicleMessageRceive.addgRPCReceivedHandler(event_key, WrapperMessage.ModeChangeReqFieldNumber, Receive_Cmd41_ModeChange);
                 vehicleMessageRceive.addgRPCReceivedHandler(event_key, WrapperMessage.StatusReqFieldNumber, Receive_Cmd43_StatusRequest);
                 vehicleMessageRceive.addgRPCReceivedHandler(event_key, WrapperMessage.AlarmResetReqFieldNumber, Receive_Cmd91_AlarmResetRequest);
+                vehicleMessageRceive.addgRPCReceivedHandler(event_key, WrapperMessage.TavellingDataRepFieldNumber, Receive_Cmd13_TravelingDataRequest);
                 vehicleMessageRceive.addgRPCReceivedHandler(event_key, WrapperMessage.ID15SectionDataSynchronizationRequestFieldNumber, Receive_Cmd15_StatusRequest);
                 vehicleMessageRceive.addgRPCReceivedHandler(event_key, WrapperMessage.ID17AddressDataSynchronizationRequestFieldNumber, Receive_Cmd17_StatusRequest);
                 vehicleMessageRceive.addgRPCReceivedHandler(event_key, WrapperMessage.ID19PortDataSynchronizationRequestFieldNumber, Receive_Cmd19_StatusRequest);
                 // ===== 功能二：註冊99命令 =====
                 vehicleMessageRceive.addgRPCReceivedHandler(event_key, WrapperMessage.OHTCSwitchReqFieldNumber, Receive_Cmd99_OHTCSwitchRequest);
+                // ===== 新增結束 =====
+                // ===== ID27/127 Parameters =====
+                vehicleMessageRceive.addgRPCReceivedHandler(event_key, WrapperMessage.ParametersReqFieldNumber, Receive_Cmd27_ParametersRequest);
                 // ===== 新增結束 =====
             }
             catch (Exception ex)
@@ -735,6 +748,32 @@ namespace Mirle.Agvc.Simulator
             }
         }
 
+        private void Receive_Cmd13_TravelingDataRequest(object sender, gRPCEventArgs e)
+        {
+            ID_13_TAVELLING_DATA_REP receive = (ID_13_TAVELLING_DATA_REP)e.objPacket;
+            SpinWait.SpinUntil(() => false, com.mirle.ibg3k0.sc.App.SystemParameter.OHTCReplyDelayTime);
+            Send_Cmd113_TravelingDataResponse(e.iSeqNum, e);
+        }
+        public void Send_Cmd113_TravelingDataResponse(int seqNum, gRPCEventArgs e)
+        {
+            try
+            {
+                ID_113_TAVELLING_DATA_RESPONSE iD_113_TAVELLING_DATA_RESPONSE = new ID_113_TAVELLING_DATA_RESPONSE();
+                iD_113_TAVELLING_DATA_RESPONSE.ReplyCode = 0;
+
+                WrapperMessage wrappers = new WrapperMessage();
+                wrappers.ID = WrapperMessage.TavellingDataRespFieldNumber;
+                wrappers.SeqNum = seqNum;
+                wrappers.TavellingDataResp = iD_113_TAVELLING_DATA_RESPONSE;
+                wrappers.IpAddress = middlerConfigs.LocalIp;
+                e.setReplyWrapper(wrappers);
+                bool is_success = e.eventWaitHandle.Set();
+            }
+            catch (Exception ex)
+            {
+                var msg = ex.StackTrace;
+            }
+        }
         private void Receive_Cmd15_StatusRequest(object sender, gRPCEventArgs e)
         {
             ID_15_SECTION_DATA_SYNCHRONIZATION_REQUEST receive = (ID_15_SECTION_DATA_SYNCHRONIZATION_REQUEST)e.objPacket; // Cmd15's object is empty
@@ -835,7 +874,7 @@ namespace Mirle.Agvc.Simulator
                 iD_143_STATUS_RESPONSE.BlockingStatus = operaObject.theVehicleInfo.BlockingStatus;
                 iD_143_STATUS_RESPONSE.CmdID = operaObject.theVehicleInfo.CmdID;
                 iD_143_STATUS_RESPONSE.CSTID = operaObject.theVehicleInfo.CSTID;
-                iD_143_STATUS_RESPONSE.BOXID = operaObject.theVehicleInfo.CSTID;
+                iD_143_STATUS_RESPONSE.BOXID = operaObject.theVehicleInfo.BOXID;
                 iD_143_STATUS_RESPONSE.CurrentAdrID = operaObject.theVehicleInfo.CurrentAdrID;
                 iD_143_STATUS_RESPONSE.CurrentSecID = operaObject.theVehicleInfo.CurrentSecID;
                 iD_143_STATUS_RESPONSE.DrivingDirection = operaObject.theVehicleInfo.DrivingDirection;
@@ -850,7 +889,7 @@ namespace Mirle.Agvc.Simulator
                 iD_143_STATUS_RESPONSE.SecDistance = operaObject.theVehicleInfo.SecDistance;
                 iD_143_STATUS_RESPONSE.StoppedBlockID = operaObject.theVehicleInfo.StoppedBlockID;
                 iD_143_STATUS_RESPONSE.HasCst = operaObject.theVehicleInfo.HasCst;
-                iD_143_STATUS_RESPONSE.HasBox = operaObject.theVehicleInfo.HasCst;
+                iD_143_STATUS_RESPONSE.HasBox = operaObject.theVehicleInfo.HasBox;
                 iD_143_STATUS_RESPONSE.CarCstID = operaObject.theVehicleInfo.CarCstID;
                 iD_143_STATUS_RESPONSE.CurrentGuideSection.AddRange(operaObject.theVehicleInfo.CurrentGuideSection);
                 iD_143_STATUS_RESPONSE.CurrentDestination = operaObject.theVehicleInfo.CurrentDestination;
@@ -869,6 +908,73 @@ namespace Mirle.Agvc.Simulator
                 var msg = ex.StackTrace;
             }
         }
+
+        // ===== ID27/127 Parameters =====
+        private void Receive_Cmd27_ParametersRequest(object sender, gRPCEventArgs e)
+        {
+            try
+            {
+                theLoggerAgent.LogMsg("Comm", new LogFormat("Comm", "1", "MiddleAgent:Receive_Cmd27_ParametersRequest", "Device", "CarrierID",
+                    $"[Cmd_27_RECEIVE] [PacketID = 27][SeqNum = {e.iSeqNum}]"));
+                ID_27_PARAMETERS_REQUEST receive = (ID_27_PARAMETERS_REQUEST)e.objPacket;
+                SpinWait.SpinUntil(() => false, com.mirle.ibg3k0.sc.App.SystemParameter.OHTCReplyDelayTime);
+                Send_Cmd127_ParametersResponse(e.iSeqNum, e);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex);
+                theLoggerAgent.LogMsg("Comm", new LogFormat("Comm", "1", "MiddleAgent:Receive_Cmd27_ParametersRequest", "Device", "CarrierID",
+                    $"[Cmd_27_EXCEPTION] {ex.Message}"));
+            }
+        }
+
+        public void Send_Cmd127_ParametersResponse(int seqNum, gRPCEventArgs e)
+        {
+            try
+            {
+                ID_127_PARAMETERS_RESPONSE iD_127_PARAMETERS_RESPONSE = new ID_127_PARAMETERS_RESPONSE();
+                iD_127_PARAMETERS_RESPONSE.StraightSpeedSetting = operaObject.StraightSpeedSetting;
+                iD_127_PARAMETERS_RESPONSE.RTrackSpeedSetting = operaObject.RTrackSpeedSetting;
+                iD_127_PARAMETERS_RESPONSE.UTrackSpeedSetting = operaObject.UTrackSpeedSetting;
+                iD_127_PARAMETERS_RESPONSE.STrackSpeedSetting = operaObject.STrackSpeedSetting;
+                iD_127_PARAMETERS_RESPONSE.PIOOnOffState = operaObject.PioOnOffState;
+                iD_127_PARAMETERS_RESPONSE.BCROnOffState = operaObject.BcrOnOffState;
+                iD_127_PARAMETERS_RESPONSE.CARRIERSUPPORTTYPE = operaObject.CarrierSupportType;
+
+                // 回報車子本身的 gRPC / MQTT endpoint 給 MCS
+                var vehicleLocalIp = string.IsNullOrWhiteSpace(middlerConfigs.LocalIp) ? "127.0.0.1" : middlerConfigs.LocalIp;
+                var vehicleLocalPort = middlerConfigs.LocalPort;
+
+                iD_127_PARAMETERS_RESPONSE.OHTCGrpcEedpoint = new Endpoint
+                {
+                    IP = vehicleLocalIp,
+                    Port = vehicleLocalPort
+                };
+                iD_127_PARAMETERS_RESPONSE.MQTTBrokerEedpoint = new Endpoint
+                {
+                    IP = vehicleLocalIp,
+                    Port = vehicleLocalPort
+                };
+
+                WrapperMessage wrappers = new WrapperMessage(); 
+                wrappers.ID = WrapperMessage.ParametersRespFieldNumber;
+                wrappers.SeqNum = seqNum;
+                wrappers.ParametersResp = iD_127_PARAMETERS_RESPONSE;
+                wrappers.IpAddress = middlerConfigs.LocalIp;
+                e.setReplyWrapper(wrappers);
+                bool is_success = e.eventWaitHandle.Set();
+
+                theLoggerAgent.LogMsg("Comm", new LogFormat("Comm", "1", "MiddleAgent:Send_Cmd127_ParametersResponse", "Device", "CarrierID",
+                    $"[SEND] [ID = 127][SeqNum = {seqNum}][is_success = {is_success}]"));
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex);
+                theLoggerAgent.LogMsg("Comm", new LogFormat("Comm", "1", "MiddleAgent:Send_Cmd127_ParametersResponse", "Device", "CarrierID",
+                    $"[Cmd_127_EXCEPTION] {ex.Message}"));
+            }
+        }
+        // ===== 新增結束 =====
 
         public void Receive_Cmd91_AlarmResetRequest(object sender, gRPCEventArgs e)
         {

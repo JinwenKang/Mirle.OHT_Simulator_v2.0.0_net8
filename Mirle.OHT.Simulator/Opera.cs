@@ -1,4 +1,4 @@
-﻿//*********************************************************************************
+//*********************************************************************************
 //      Opera.cs
 //*********************************************************************************
 // File Name: Opera.cs
@@ -79,6 +79,16 @@ namespace Mirle.Agvc.Simulator
         private volatile bool isCmd134ReportEnabled = true;
         // ===== 新增結束 =====
 
+        // ===== ID27/127 Parameters =====
+        public int StraightSpeedSetting { get; set; } = 3000;
+        public int RTrackSpeedSetting { get; set; } = 1000;
+        public int UTrackSpeedSetting { get; set; } = 1000;
+        public int STrackSpeedSetting { get; set; } = 1000;
+        public OnOffState PioOnOffState { get; set; } = OnOffState.On;
+        public OnOffState BcrOnOffState { get; set; } = OnOffState.On;
+        public string CarrierSupportType { get; set; } = "1";
+        // ===== 新增結束 =====
+
         string BlockID = string.Empty;
 
         SCApplication scApp = null;
@@ -94,6 +104,51 @@ namespace Mirle.Agvc.Simulator
         {
             scApp = SCApplication.getInstance();
             this.agent = agent;
+
+            // Load parameters from App.config with spec-compliant defaults
+            int straightSpeed = 3000;
+            int rTrackSpeed = 1000;
+            int uTrackSpeed = 1000;
+            int sTrackSpeed = 1000;
+            OnOffState pioState = OnOffState.On;
+            OnOffState bcrState = OnOffState.On;
+            string carrierSupportType = "1";
+
+            try
+            {
+                string straightSpeedStr = System.Configuration.ConfigurationManager.AppSettings["StraightSpeedSetting"];
+                if (!string.IsNullOrEmpty(straightSpeedStr)) straightSpeed = Convert.ToInt32(straightSpeedStr);
+
+                string rSpeedStr = System.Configuration.ConfigurationManager.AppSettings["RTrackSpeedSetting"];
+                if (!string.IsNullOrEmpty(rSpeedStr)) rTrackSpeed = Convert.ToInt32(rSpeedStr);
+
+                string uSpeedStr = System.Configuration.ConfigurationManager.AppSettings["UTrackSpeedSetting"];
+                if (!string.IsNullOrEmpty(uSpeedStr)) uTrackSpeed = Convert.ToInt32(uSpeedStr);
+
+                string sSpeedStr = System.Configuration.ConfigurationManager.AppSettings["STrackSpeedSetting"];
+                if (!string.IsNullOrEmpty(sSpeedStr)) sTrackSpeed = Convert.ToInt32(sSpeedStr);
+
+                string pioOnOffStr = System.Configuration.ConfigurationManager.AppSettings["PIOOnOffState"];
+                if (!string.IsNullOrEmpty(pioOnOffStr)) pioState = (OnOffState)Enum.Parse(typeof(OnOffState), pioOnOffStr, true);
+
+                string bcrOnOffStr = System.Configuration.ConfigurationManager.AppSettings["BCROnOffState"];
+                if (!string.IsNullOrEmpty(bcrOnOffStr)) bcrState = (OnOffState)Enum.Parse(typeof(OnOffState), bcrOnOffStr, true);
+
+                string carrierSupportTypeStr = System.Configuration.ConfigurationManager.AppSettings["CarrierSupportType"];
+                if (!string.IsNullOrEmpty(carrierSupportTypeStr)) carrierSupportType = carrierSupportTypeStr;
+            }
+            catch (Exception ex)
+            {
+                logger.Error("Failed to parse vehicle parameters from App.config, using defaults. Exception: " + ex.ToString());
+            }
+
+            StraightSpeedSetting = straightSpeed;
+            RTrackSpeedSetting = rTrackSpeed;
+            UTrackSpeedSetting = uTrackSpeed;
+            STrackSpeedSetting = sTrackSpeed;
+            PioOnOffState = pioState;
+            BcrOnOffState = bcrState;
+            CarrierSupportType = carrierSupportType;
         }
         public bool Selected_Operate_Type(EnumOperaType selectedOpera)
         {
@@ -317,6 +372,38 @@ namespace Mirle.Agvc.Simulator
 
             try
             {
+                if (scApp?.ConfigDataBLL != null && !string.IsNullOrEmpty(from))
+                {
+                    string origFrom = from;
+                    Address adr = scApp.ConfigDataBLL.getAddress(from);
+                    if (adr == null)
+                    {
+                        PortMap portMap = scApp.ConfigDataBLL.loadPortMapByID(from);
+                        if (portMap != null && !string.IsNullOrEmpty(portMap.StationAddress))
+                        {
+                            from = portMap.StationAddress;
+                            adr = scApp.ConfigDataBLL.getAddress(from);
+                        }
+                    }
+
+                    if (adr != null && adr.Adr_Type == SCAppConstants.AddressType.Control)
+                    {
+                        if (!string.IsNullOrEmpty(adr.Sec_ID))
+                        {
+                            Section sec = scApp.ConfigDataBLL.getSection(adr.Sec_ID);
+                            if (sec != null && !string.IsNullOrEmpty(sec.From_Adr))
+                            {
+                                from = sec.From_Adr;
+                            }
+                        }
+                    }
+
+                    if (!string.Equals(origFrom, from))
+                    {
+                        logger_systemProcess.Info($"Send_Cmd138_RequestGuideData from converted from [{origFrom}] to [{from}]");
+                    }
+                }
+
                 ID_138_GUIDE_INFO_REQUEST iD_138_SendToOHTC = new ID_138_GUIDE_INFO_REQUEST();
                 FromToAdr fromTo = new FromToAdr();
                 fromTo.From = from;
@@ -2375,20 +2462,24 @@ namespace Mirle.Agvc.Simulator
                 {
                     theVehicleInfo.HasCst = VhLoadCarrierStatus.Exist;
                     theVehicleInfo.CSTID = cst_id;
+                    theVehicleInfo.CarCstID = cst_id;
                 }
 
                 if(!scApp.isEmpty(box_id))
                 {
                     theVehicleInfo.HasBox = VhLoadCarrierStatus.Exist;
                     theVehicleInfo.BOXID = box_id;
+                    theVehicleInfo.CarBoxID = box_id;
                 }
             }
             else
             {
                 theVehicleInfo.HasCst = VhLoadCarrierStatus.NotExist;
                 theVehicleInfo.CSTID = string.Empty;
+                theVehicleInfo.CarCstID = string.Empty;
                 theVehicleInfo.HasBox = VhLoadCarrierStatus.NotExist;
                 theVehicleInfo.BOXID = string.Empty;
+                theVehicleInfo.CarBoxID = string.Empty;
             }
         }
 

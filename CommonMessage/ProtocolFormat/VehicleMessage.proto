@@ -1,4 +1,4 @@
-﻿// See README.txt for information and build instructions.
+// See README.txt for information and build instructions.
 //
 // Note: START and END tags are used in comments to define sections used in
 // tutorials.  They are not part of the syntax for Protocol Buffers.
@@ -960,6 +960,13 @@ message ID_74_RANGE_TEACHING_PORT_RESPONSE {
     OFF = 0;
 	ON = 1;
   }
+  
+  // Represents a network endpoint with IP and Port
+  message Endpoint {
+    string IP = 1;
+    int32 Port = 2;
+  }
+
   message ID_27_PARAMETERS_REQUEST {
   }
   message ID_127_PARAMETERS_RESPONSE {
@@ -969,6 +976,10 @@ message ID_74_RANGE_TEACHING_PORT_RESPONSE {
     int32 STrack_Speed_Setting = 4;
     OnOffState PIO_OnOff_State = 5;
     OnOffState BCR_OnOff_State = 6;
+	string CARRIER_SUPPORT_TYPE = 7;
+    // Grouped endpoints for cleaner structure
+    Endpoint OHTC_Grpc_Eedpoint = 8;
+    Endpoint MQTT_Broker_Eedpoint = 9;
   }
   
   message ID_146_DATA_COLLECTION_REP {

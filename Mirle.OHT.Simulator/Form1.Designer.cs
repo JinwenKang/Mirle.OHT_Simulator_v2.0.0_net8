@@ -599,7 +599,9 @@ namespace Mirle.Agvc.Simulator
             // 
             // tbx_init_add_id
             // 
-            tbx_init_add_id.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            tbx_init_add_id.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
+            tbx_init_add_id.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
+            tbx_init_add_id.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDown;
             tbx_init_add_id.Font = new System.Drawing.Font("微軟正黑體", 10F);
             tbx_init_add_id.FormattingEnabled = true;
             tbx_init_add_id.Location = new System.Drawing.Point(117, 14);
@@ -607,6 +609,7 @@ namespace Mirle.Agvc.Simulator
             tbx_init_add_id.Name = "tbx_init_add_id";
             tbx_init_add_id.Size = new System.Drawing.Size(93, 25);
             tbx_init_add_id.TabIndex = 47;
+            tbx_init_add_id.TextChanged += tbx_init_add_id_TextChanged;
             tbx_init_add_id.SelectedIndexChanged += tbx_init_add_id_SelectedIndexChanged;
             // 
             // label9
@@ -621,7 +624,9 @@ namespace Mirle.Agvc.Simulator
             // 
             // tbx_init_sec_id
             // 
-            tbx_init_sec_id.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            tbx_init_sec_id.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
+            tbx_init_sec_id.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
+            tbx_init_sec_id.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDown;
             tbx_init_sec_id.Font = new System.Drawing.Font("微軟正黑體", 10F);
             tbx_init_sec_id.FormattingEnabled = true;
             tbx_init_sec_id.Location = new System.Drawing.Point(117, 51);
@@ -629,6 +634,7 @@ namespace Mirle.Agvc.Simulator
             tbx_init_sec_id.Name = "tbx_init_sec_id";
             tbx_init_sec_id.Size = new System.Drawing.Size(93, 25);
             tbx_init_sec_id.TabIndex = 47;
+            tbx_init_sec_id.TextChanged += tbx_init_sec_id_TextChanged;
             // 
             // textBox3
             // 

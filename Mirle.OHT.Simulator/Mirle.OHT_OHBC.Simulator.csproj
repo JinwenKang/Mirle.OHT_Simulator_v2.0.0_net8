@@ -28,9 +28,9 @@
     <Product>Mirle.Agvc.Simulator</Product>
     <Company>Mirle Automation Corporation</Company>
     <Copyright>Copyright © Mirle Automation Corporation</Copyright>
-    <AssemblyVersion>2.0.0.15</AssemblyVersion>
-    <FileVersion>2.0.0.15</FileVersion>
-    <Version>2.0.0.15</Version>
+    <AssemblyVersion>2.0.0.17</AssemblyVersion>
+    <FileVersion>2.0.0.17</FileVersion>
+    <Version>2.0.0.17</Version>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- WinForms 在 net8.0-windows 下會大量觸發 CA1416；TFM 已限定 Windows，可安全抑制 -->
     <NoWarn>$(NoWarn);CA1416</NoWarn>
@@ -140,13 +140,7 @@
     <None Update="Config\ASECTION.csv">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Config\BLOCKDATA.csv">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Update="Config\PORTMAP.csv">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Config\VEHICLEMAP.csv">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="SaveConfig\Visionox_2\AADDRESS.csv">

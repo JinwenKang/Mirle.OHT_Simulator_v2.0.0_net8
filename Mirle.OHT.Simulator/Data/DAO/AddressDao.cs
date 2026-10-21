@@ -28,27 +28,39 @@ namespace com.mirle.ibg3k0.sc.Data.DAO
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
+        private static string SafeField(DataRow row, string columnName)
+        {
+            if (row == null || row.Table == null || !row.Table.Columns.Contains(columnName))
+            {
+                return string.Empty;
+            }
+
+            var value = row[columnName];
+            return value == null || value == DBNull.Value ? string.Empty : value.ToString();
+        }
+
         public List<Address> loadAddress()
         {
             try
             {
                 DataTable dt = SCApplication.getInstance().ConfigData.Tables["AADDRESS"];
-                List<Address> rtnAdrLst = null;
+                if (dt == null)
+                {
+                    return new List<Address>();
+                }
 
                 var query = from c in dt.AsEnumerable()
                             select new Address
                             {
-                                Adr_ID = c.Field<string>("Id"),
-                                POS_X = c.Field<string>("PositionX"),
-                                POS_Y = c.Field<string>("PositionY"),
-                                Adr_Type = int.Parse(c.Field<string>("AdrType")),
-                                Sec_ID = c.Field<string>("SecID"),
-                                Distance = c.Field<string>("Distance"),
+                                Adr_ID = SafeField(c, "Id"),
+                                POS_X = SafeField(c, "PositionX"),
+                                POS_Y = SafeField(c, "PositionY"),
+                                Adr_Type = int.TryParse(SafeField(c, "AdrType"), out int adrType) ? adrType : 0,
+                                Sec_ID = SafeField(c, "SecID"),
+                                Distance = SafeField(c, "Distance"),
                             };
 
-                rtnAdrLst = query.ToList();
-
-                return rtnAdrLst;
+                return query.ToList();
             }
             catch (Exception ex)
             {
@@ -62,23 +74,24 @@ namespace com.mirle.ibg3k0.sc.Data.DAO
             try
             {
                 DataTable dt = SCApplication.getInstance().ConfigData.Tables["AADDRESS"];
-                Address rtnAdr = null;
+                if (dt == null || string.IsNullOrWhiteSpace(adr_id))
+                {
+                    return null;
+                }
 
                 var query = from c in dt.AsEnumerable()
-                            where c.Field<string>("Id").Trim() == adr_id.Trim()
+                            where SafeField(c, "Id").Trim() == adr_id.Trim()
                             select new Address
                             {
-                                Adr_ID = c.Field<string>("Id"),
-                                POS_X = c.Field<string>("PositionX"),
-                                POS_Y = c.Field<string>("PositionY"),
-                                Adr_Type = int.Parse(c.Field<string>("AdrType")),
-                                Sec_ID = c.Field<string>("SecID"),
-                                Distance = c.Field<string>("Distance"),
+                                Adr_ID = SafeField(c, "Id"),
+                                POS_X = SafeField(c, "PositionX"),
+                                POS_Y = SafeField(c, "PositionY"),
+                                Adr_Type = int.TryParse(SafeField(c, "AdrType"), out int adrType) ? adrType : 0,
+                                Sec_ID = SafeField(c, "SecID"),
+                                Distance = SafeField(c, "Distance"),
                             };
 
-                rtnAdr = query.FirstOrDefault();
-
-                return rtnAdr;
+                return query.FirstOrDefault();
             }
             catch (Exception ex)
             {
@@ -92,23 +105,24 @@ namespace com.mirle.ibg3k0.sc.Data.DAO
             try
             {
                 DataTable dt = SCApplication.getInstance().ConfigData.Tables["AADDRESS"];
-                List<Address> rtnAdrLst = null;
+                if (dt == null)
+                {
+                    return new List<Address>();
+                }
 
                 var query = from c in dt.AsEnumerable()
-                            where c.Field<string>("SecID").Trim() == sec_id.Trim() && c.Field<string>("AdrType").Trim() == "1"
+                            where SafeField(c, "SecID").Trim() == sec_id.Trim() && SafeField(c, "AdrType").Trim() == "1"
                             select new Address
                             {
-                                Adr_ID = c.Field<string>("Id"),
-                                POS_X = c.Field<string>("PositionX"),
-                                POS_Y = c.Field<string>("PositionY"),
-                                Adr_Type = int.Parse(c.Field<string>("AdrType")),
-                                Sec_ID = c.Field<string>("SecID"),
-                                Distance = c.Field<string>("Distance"),
+                                Adr_ID = SafeField(c, "Id"),
+                                POS_X = SafeField(c, "PositionX"),
+                                POS_Y = SafeField(c, "PositionY"),
+                                Adr_Type = int.TryParse(SafeField(c, "AdrType"), out int adrType) ? adrType : 0,
+                                Sec_ID = SafeField(c, "SecID"),
+                                Distance = SafeField(c, "Distance"),
                             };
 
-                rtnAdrLst = query.ToList();
-
-                return rtnAdrLst;
+                return query.ToList();
             }
             catch (Exception ex)
             {

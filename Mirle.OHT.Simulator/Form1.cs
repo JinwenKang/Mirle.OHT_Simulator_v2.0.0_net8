@@ -52,6 +52,11 @@ namespace Mirle.Agvc.Simulator
         public EnumAddress TempAddr { get; set; } = EnumAddress.A;
         public Random random = new Random();
 
+        private TextBox txtInitPosX;
+        private TextBox txtInitPosY;
+        private Label lblInitPosX;
+        private Label lblInitPosY;
+
         private NLog.Logger logger = LogManager.GetCurrentClassLogger();
 
         public bool IsInSitu { get; set; } = false;
@@ -68,8 +73,95 @@ namespace Mirle.Agvc.Simulator
 
         // Store vehicle map data for auto-fill
         private Dictionary<string, string[]> _vehicleMapData = new Dictionary<string, string[]>();
+        private Dictionary<string, string[]> _addressData = new Dictionary<string, string[]>();
         // Store section data for filtering
         private List<string[]> _sectionData = new List<string[]>();
+
+        private void EnsureInitPositionManualControls()
+        {
+            if (txtInitPosX != null && txtInitPosY != null)
+                return;
+
+            lblInitPosX = new Label
+            {
+                AutoSize = true,
+                Font = new Font("微軟正黑體", 10F),
+                Location = new Point(9, 89),
+                Margin = new Padding(4, 0, 4, 0),
+                Name = "lblInitPosX",
+                Size = new Size(46, 18),
+                TabIndex = 49,
+                Text = "Init_X"
+            };
+
+            txtInitPosX = new TextBox
+            {
+                Font = new Font("微軟正黑體", 10F),
+                Location = new Point(117, 86),
+                Margin = new Padding(4),
+                Name = "txtInitPosX",
+                Size = new Size(93, 25),
+                TabIndex = 47,
+                Text = "0"
+            };
+            txtInitPosX.TextChanged += txtInitPosXY_TextChanged;
+
+            lblInitPosY = new Label
+            {
+                AutoSize = true,
+                Font = new Font("微軟正黑體", 10F),
+                Location = new Point(9, 126),
+                Margin = new Padding(4, 0, 4, 0),
+                Name = "lblInitPosY",
+                Size = new Size(46, 18),
+                TabIndex = 49,
+                Text = "Init_Y"
+            };
+
+            txtInitPosY = new TextBox
+            {
+                Font = new Font("微軟正黑體", 10F),
+                Location = new Point(117, 123),
+                Margin = new Padding(4),
+                Name = "txtInitPosY",
+                Size = new Size(93, 25),
+                TabIndex = 47,
+                Text = "0"
+            };
+            txtInitPosY.TextChanged += txtInitPosXY_TextChanged;
+
+            grpInitPos.Controls.Add(lblInitPosX);
+            grpInitPos.Controls.Add(txtInitPosX);
+            grpInitPos.Controls.Add(lblInitPosY);
+            grpInitPos.Controls.Add(txtInitPosY);
+        }
+
+        private bool TryParseInitPosition(out double x, out double y)
+        {
+            x = 0;
+            y = 0;
+
+            bool xParsed = double.TryParse(txtInitPosX?.Text, out x);
+            bool yParsed = double.TryParse(txtInitPosY?.Text, out y);
+            return xParsed && yParsed;
+        }
+
+        private void SyncInitPositionFromAddress(string addressId)
+        {
+            if (string.IsNullOrWhiteSpace(addressId))
+                return;
+
+            if (_addressData.TryGetValue(addressId, out var fields) && fields.Length > 2)
+            {
+                txtInitPosX.Text = fields[1].Trim();
+                txtInitPosY.Text = fields[2].Trim();
+            }
+        }
+
+        private void txtInitPosXY_TextChanged(object sender, EventArgs e)
+        {
+            // Keep the manual X/Y values as the effective position for ID_134.
+        }
 
         private void LoadVehicleIDs()
         {
@@ -102,7 +194,9 @@ namespace Mirle.Agvc.Simulator
                         var fields = lines[i].Split(',');
                         if (fields.Length > 0 && !string.IsNullOrWhiteSpace(fields[0]))
                         {
-                            tbx_init_add_id.Items.Add(fields[0].Trim());
+                            string addressId = fields[0].Trim();
+                            tbx_init_add_id.Items.Add(addressId);
+                            _addressData[addressId] = fields;
                         }
                     }
                 }
@@ -147,10 +241,37 @@ namespace Mirle.Agvc.Simulator
             }
         }
 
-        private void tbx_init_add_id_SelectedIndexChanged(object sender, EventArgs e)
+        private void RefreshInitPositionSectionOptions()
         {
-            if (tbx_init_add_id.SelectedItem == null) return;
-            string selectedAddr = tbx_init_add_id.SelectedItem.ToString();
+            string selectedAddr = tbx_init_add_id.Text?.Trim();
+            string currentSection = tbx_init_sec_id.Text?.Trim();
+
+            if (!string.IsNullOrWhiteSpace(selectedAddr))
+            {
+                SyncInitPositionFromAddress(selectedAddr);
+            }
+
+            if (string.IsNullOrWhiteSpace(selectedAddr))
+            {
+                tbx_init_sec_id.Items.Clear();
+                return;
+            }
+
+            bool addressExistsInList = false;
+            foreach (var item in tbx_init_add_id.Items)
+            {
+                if (string.Equals(item?.ToString()?.Trim(), selectedAddr, StringComparison.Ordinal))
+                {
+                    addressExistsInList = true;
+                    break;
+                }
+            }
+
+            if (!addressExistsInList)
+            {
+                // User is typing a custom Address value; do not enforce Section CSV matching.
+                return;
+            }
 
             tbx_init_sec_id.Items.Clear();
             foreach (var sec in _sectionData)
@@ -161,12 +282,34 @@ namespace Mirle.Agvc.Simulator
                     tbx_init_sec_id.Items.Add(sec[0].Trim());
                 }
             }
+
             if (tbx_init_sec_id.Items.Count > 0)
-                tbx_init_sec_id.SelectedIndex = 0;
+            {
+                if (string.IsNullOrWhiteSpace(currentSection) || !tbx_init_sec_id.Items.Contains(currentSection))
+                    tbx_init_sec_id.SelectedIndex = 0;
+                else
+                    tbx_init_sec_id.Text = currentSection;
+            }
+        }
+
+        private void tbx_init_add_id_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            RefreshInitPositionSectionOptions();
+        }
+
+        private void tbx_init_add_id_TextChanged(object sender, EventArgs e)
+        {
+            RefreshInitPositionSectionOptions();
+        }
+
+        private void tbx_init_sec_id_TextChanged(object sender, EventArgs e)
+        {
+            // Manual Section input is allowed without Address validation.
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            EnsureInitPositionManualControls();
             LoadVehicleIDs();
             LoadConfigs();
             scApp = SCApplication.getInstance();
@@ -250,6 +393,7 @@ namespace Mirle.Agvc.Simulator
             txtLocalPort.Text = "10101";
             tbx_init_add_id.Text = "10238";
             tbx_init_sec_id.Text = "49001";
+            SyncInitPositionFromAddress("10238");
             //txtLocalIP.Text = "192.168.74.82";
             txtLocalIP.Text = SystemParameter.SECSLocalIP;
 
@@ -423,6 +567,16 @@ namespace Mirle.Agvc.Simulator
 
                 newConfig.CurrentAdrID = tbx_init_add_id.Text;
                 newConfig.CurrentSecID = tbx_init_sec_id.Text;
+                if (TryParseInitPosition(out double initX, out double initY))
+                {
+                    newConfig.CurrentX = initX;
+                    newConfig.CurrentY = initY;
+                }
+                else
+                {
+                    newConfig.CurrentX = 0;
+                    newConfig.CurrentY = 0;
+                }
 
                 MiddleAgent middleAgent = new MiddleAgent(newConfig);
                 middleAgent.OnCmdSend += MiddleAgent_OnCmdSendOrReceive;

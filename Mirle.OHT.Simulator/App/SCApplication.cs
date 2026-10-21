@@ -1023,12 +1023,20 @@ namespace com.mirle.ibg3k0.sc.App
 
         private void setVirtualAddress(List<Section> secLst)
         {
-            List<Address> adrLst = configDataBLL.loadAddress();
+            if (secLst == null || secLst.Count == 0)
+            {
+                logger.Warn("setVirtualAddress: secLst is null or empty. Skip virtual address generation.");
+                return;
+            }
+
+            List<Address> adrLst = configDataBLL.loadAddress() ?? new List<Address>();
 
             foreach (Section sec in secLst)
             {
-                Address from = adrLst.FirstOrDefault(a => a.Adr_ID.Trim() == sec.From_Adr.Trim());
-                Address to = adrLst.FirstOrDefault(a => a.Adr_ID.Trim() == sec.To_Adr.Trim());
+                if (sec == null) continue;
+
+                Address from = adrLst.FirstOrDefault(a => a != null && a.Adr_ID.Trim() == sec.From_Adr.Trim());
+                Address to = adrLst.FirstOrDefault(a => a != null && a.Adr_ID.Trim() == sec.To_Adr.Trim());
 
                 if (from == null || to == null)
                 {
